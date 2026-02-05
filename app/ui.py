@@ -104,9 +104,14 @@ def show_setup_wizard():
         existing_conf = ""
         default_remote_name = "remote"
         
-        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
+        # Check if rclone_path is a directory (Docker mount fix)
+        read_path = rclone_path
+        if os.path.isdir(rclone_path):
+            read_path = os.path.join(rclone_path, "rclone.conf")
+
+        if os.path.exists(read_path) and os.path.isfile(read_path):
             try:
-                with open(rclone_path, "r") as f:
+                with open(read_path, "r") as f:
                     existing_conf = f.read()
                 
                 # Auto-detect remote name from existing config
@@ -141,12 +146,18 @@ def show_setup_wizard():
             if not backup_pass:
                 st.error(get_text(lang, "error_missing_fields"))
             else:
+                # Handle directory case for rclone_path (common Docker issue)
+                real_rclone_path = rclone_path
+                if os.path.isdir(rclone_path):
+                    real_rclone_path = os.path.join(rclone_path, "rclone.conf")
+                    st.warning(get_text(lang, "warning_rclone_isdir").format(path=rclone_path, new_path=real_rclone_path))
+
                 # Save rclone content if provided
                 if rclone_content.strip():
                     try:
                         # Ensure directory exists
-                        os.makedirs(os.path.dirname(rclone_path), exist_ok=True)
-                        with open(rclone_path, "w") as f:
+                        os.makedirs(os.path.dirname(real_rclone_path), exist_ok=True)
+                        with open(real_rclone_path, "w") as f:
                             f.write(rclone_content)
                     except Exception as e:
                         st.error(f"Error saving rclone.conf: {e}")
@@ -175,7 +186,7 @@ def show_setup_wizard():
                     "RETENTION_DAYS": retention,
                     "TZ": tz,
                     "HEALTHCHECK_URL": healthcheck_url,
-                    "RCLONE_CONFIG_PATH": rclone_path,
+                    "RCLONE_CONFIG_PATH": real_rclone_path,
                     "RCLONE_REMOTE_NAME": final_remote_name,
                     "RCLONE_DESTINATION": rclone_dest
                 }

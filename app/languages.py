@@ -38,6 +38,7 @@ TRANSLATIONS = {
         "label_rclone_content": "Rclone Configuration Content (rclone.conf)",
         "help_rclone_content_msg": "Paste your local rclone.conf content here. Need help generating it?",
         "help_rclone_content_hint": "Run `rclone config` on your local machine, then copy the file content.",
+        "warning_rclone_isdir": "⚠️ Warning: The path `{path}` is a directory (likely due to a Docker volume mount). Saving configuration to `{new_path}` instead.",
         
         "btn_save": "💾 Save Settings & Start",
         "error_missing_fields": "⛔ Error: Portainer URL, Token, and Backup Password are required!",
@@ -116,6 +117,7 @@ TRANSLATIONS = {
         "label_rclone_content": "Rclone Konfigürasyon İçeriği (rclone.conf)",
         "help_rclone_content_msg": "Yerel rclone.conf içeriğinizi buraya yapıştırın. Oluşturmak için yardıma mı ihtiyacınız var?",
         "help_rclone_content_hint": "Yerel makinenizde `rclone config` komutunu çalıştırın, ardından dosya içeriğini kopyalayın.",
+        "warning_rclone_isdir": "⚠️ Uyarı: `{path}` yolu bir dizin (muhtemelen Docker volume mount nedeniyle). Konfigürasyon bunun yerine `{new_path}` konumuna kaydediliyor.",
         
         "btn_save": "💾 Ayarları Kaydet ve Başlat",
         "error_missing_fields": "⛔ Hata: Portainer URL, Token ve Yedekleme Şifresi zorunludur!",
@@ -194,6 +196,7 @@ TRANSLATIONS = {
         "label_rclone_content": "Rclone Konfigurationsinhalt (rclone.conf)",
         "help_rclone_content_msg": "Fügen Sie hier Ihren lokalen rclone.conf-Inhalt ein. Benötigen Sie Hilfe bei der Erstellung?",
         "help_rclone_content_hint": "Führen Sie `rclone config` auf Ihrem lokalen Computer aus und kopieren Sie dann den Dateiinhalt.",
+        "warning_rclone_isdir": "⚠️ Warnung: Der Pfad `{path}` ist ein Verzeichnis (wahrscheinlich aufgrund eines Docker-Volume-Mounts). Konfiguration wird stattdessen in `{new_path}` gespeichert.",
         
         "btn_save": "💾 Einstellungen speichern & starten",
         "error_missing_fields": "⛔ Fehler: Portainer URL, Token und Backup-Passwort sind erforderlich!",
