@@ -24,7 +24,8 @@ class BackupEngine:
         os.makedirs(self.backup_root, exist_ok=True)
         
         # Load env
-        load_dotenv()
+        env_path = ".env/config.env" if os.path.isdir(".env") else ".env"
+        load_dotenv(dotenv_path=env_path)
         # Updated default path to match docker-compose mount
         self.rclone_config = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
         self.rclone_remote_name = os.getenv("RCLONE_REMOTE_NAME", "remote")

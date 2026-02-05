@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 class APIHandler:
     def __init__(self):
         # Load .env file
-        load_dotenv()
+        env_path = ".env/config.env" if os.path.isdir(".env") else ".env"
+        load_dotenv(dotenv_path=env_path)
         
         self.portainer_url = os.getenv("PORTAINER_URL")
         self.portainer_token = os.getenv("PORTAINER_TOKEN")

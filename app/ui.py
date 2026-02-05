@@ -11,21 +11,26 @@ from app.languages import get_text, TRANSLATIONS
 
 ENV_FILE = ".env"
 
+def get_env_path():
+    """Determines the correct path for the .env file."""
+    # If .env is a directory (Docker mount issue), use a file inside it
+    if os.path.isdir(ENV_FILE):
+        return os.path.join(ENV_FILE, "config.env")
+    return ENV_FILE
+
 def save_env(data):
     """Writes data from the given dictionary to the .env file."""
     try:
-        # Check if ENV_FILE is a directory and remove it if so
-        if os.path.isdir(ENV_FILE):
-            shutil.rmtree(ENV_FILE)
-
-        with open(ENV_FILE, "w") as f:
+        target_file = get_env_path()
+        
+        with open(target_file, "w") as f:
             for key, value in data.items():
                 f.write(f"{key}={value}\n")
             f.flush()
             os.fsync(f.fileno())
         
         # Force reload env to update python environment immediately
-        load_dotenv(override=True)
+        load_dotenv(dotenv_path=target_file, override=True)
         return True
     except Exception as e:
         st.error(f"Error saving settings: {e}")
@@ -129,7 +134,7 @@ def show_setup_wizard():
 def show_dashboard():
     """Displays the main control panel."""
     # Load env to get language
-    load_dotenv(override=True)
+    load_dotenv(dotenv_path=get_env_path(), override=True)
     lang = os.getenv("LANGUAGE", "en")
     
     st.set_page_config(page_title=get_text(lang, "page_title_dashboard"), page_icon="📦", layout="wide")
@@ -201,7 +206,7 @@ def show_dashboard():
 
 def run():
     # Force reload env to get the latest values
-    load_dotenv(override=True)
+    load_dotenv(dotenv_path=get_env_path(), override=True)
     
     # Check if critical configuration exists
     backup_password = os.getenv("BACKUP_PASSWORD")
