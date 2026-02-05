@@ -1,0 +1,6 @@
+streamlit
+docker
+python-dotenv
+requests
+cryptography
+rclone-python

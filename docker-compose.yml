@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  restore-container:
+    build: .
+    container_name: restore_container
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      # Docker Socket (Konteynerleri yönetmek için şart)
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Konfigürasyon dosyasının kalıcılığı için
+      - ./.env:/app/.env
+      # Yedeklerin tutulacağı alan (Host üzerinde ./backups klasörüne eşlenir)
+      - ./backups:/backups
+      # Rclone konfigürasyonunun kalıcılığı için (Opsiyonel ama önerilir)
+      - ./config/rclone:/config/rclone
+    # Host üzerindeki diğer konteynerlerin volume'lerine erişebilmek için root yetkisi gerekebilir
+    # Ancak güvenlik için sadece docker grubunda olması daha iyidir.
+    # Şimdilik standart kullanıcı root olarak çalışıyor (Dockerfile'da user değiştirmedik).
