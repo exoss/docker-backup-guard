@@ -33,6 +33,9 @@ TRANSLATIONS = {
         "help_rclone_path": "Path to rclone.conf mounted inside the container.",
         "label_rclone_remote": "Rclone Remote Name",
         "help_rclone_remote": "Name of the remote configured in rclone.conf (e.g., 'gdrive').",
+        "label_rclone_content": "Rclone Configuration Content (rclone.conf)",
+        "help_rclone_content_msg": "Paste your local rclone.conf content here. Need help generating it?",
+        "help_rclone_content_hint": "Run `rclone config` on your local machine, then copy the file content.",
         
         "btn_save": "💾 Save Settings & Start",
         "error_missing_fields": "⛔ Error: Portainer URL, Token, and Backup Password are required!",
@@ -100,6 +103,9 @@ TRANSLATIONS = {
         "help_rclone_path": "Konteyner içine mount edilen rclone.conf dosyasının yolu.",
         "label_rclone_remote": "Rclone Remote Adı",
         "help_rclone_remote": "rclone.conf içinde tanımlanan uzak sunucu adı (örn: 'gdrive').",
+        "label_rclone_content": "Rclone Konfigürasyon İçeriği (rclone.conf)",
+        "help_rclone_content_msg": "Yerel rclone.conf içeriğinizi buraya yapıştırın. Oluşturmak için yardıma mı ihtiyacınız var?",
+        "help_rclone_content_hint": "Yerel makinenizde `rclone config` komutunu çalıştırın, ardından dosya içeriğini kopyalayın.",
         
         "btn_save": "💾 Ayarları Kaydet ve Başlat",
         "error_missing_fields": "⛔ Hata: Portainer URL, Token ve Yedekleme Şifresi zorunludur!",
@@ -167,6 +173,9 @@ TRANSLATIONS = {
         "help_rclone_path": "Pfad zur rclone.conf, die im Container eingehängt ist.",
         "label_rclone_remote": "Rclone Remote Name",
         "help_rclone_remote": "Name des in rclone.conf konfigurierten Remote (z.B. 'gdrive').",
+        "label_rclone_content": "Rclone Konfigurationsinhalt (rclone.conf)",
+        "help_rclone_content_msg": "Fügen Sie hier Ihren lokalen rclone.conf-Inhalt ein. Benötigen Sie Hilfe bei der Erstellung?",
+        "help_rclone_content_hint": "Führen Sie `rclone config` auf Ihrem lokalen Computer aus und kopieren Sie dann den Dateiinhalt.",
         
         "btn_save": "💾 Einstellungen speichern & starten",
         "error_missing_fields": "⛔ Fehler: Portainer URL, Token und Backup-Passwort sind erforderlich!",

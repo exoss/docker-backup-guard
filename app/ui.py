@@ -100,6 +100,28 @@ def show_setup_wizard():
         with col10:
             rclone_remote = st.text_input(get_text(lang, "label_rclone_remote"), value="remote", help=get_text(lang, "help_rclone_remote"))
 
+        # Rclone Config Content Editor
+        st.markdown(f"""
+        **{get_text(lang, 'help_rclone_content_msg')}**  
+        👉 [rclone config docs](https://rclone.org/commands/rclone_config/)  
+        ℹ️ *{get_text(lang, 'help_rclone_content_hint')}*
+        """)
+
+        # Read existing rclone.conf if available
+        existing_conf = ""
+        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
+            try:
+                with open(rclone_path, "r") as f:
+                    existing_conf = f.read()
+            except Exception:
+                pass
+
+        rclone_content = st.text_area(
+            get_text(lang, "label_rclone_content"), 
+            value=existing_conf, 
+            height=200
+        )
+
         st.markdown("---")
         submitted = st.form_submit_button(get_text(lang, "btn_save"), type="primary")
 
@@ -108,6 +130,16 @@ def show_setup_wizard():
             if not backup_pass:
                 st.error(get_text(lang, "error_missing_fields"))
             else:
+                # Save rclone content if provided
+                if rclone_content.strip():
+                    try:
+                        # Ensure directory exists
+                        os.makedirs(os.path.dirname(rclone_path), exist_ok=True)
+                        with open(rclone_path, "w") as f:
+                            f.write(rclone_content)
+                    except Exception as e:
+                        st.error(f"Error saving rclone.conf: {e}")
+
                 # Generate random salt for encryption
                 random_salt = secrets.token_hex(16)
                 
