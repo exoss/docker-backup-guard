@@ -51,7 +51,9 @@ TRANSLATIONS = {
         "label_status": "Status",
         "label_image": "Image",
         "btn_backup": "🚀 Backup: {name}",
+        "btn_full_backup": "🚀 Start Full Backup",
         "status_backing_up": "Backing up: {name}...",
+        "status_full_backup_start": "Starting Full Backup for all containers...",
         "status_scanning": "🔍 Scanning Volume and Mount points...",
         "error_no_pass": "ERROR: Backup password not found!",
         "status_failed": "Backup Failed ❌",
@@ -64,8 +66,12 @@ TRANSLATIONS = {
         # Notifications
         "notif_success_title": "Backup Successful",
         "notif_success_msg": "Container {name} successfully backed up.",
+        "notif_full_success_title": "Full Backup Successful",
+        "notif_full_success_msg": "All containers backed up and synced to cloud.",
         "notif_error_title": "Backup Error",
         "notif_error_msg": "Error backing up {name}!",
+        "notif_full_error_title": "Full Backup Error",
+        "notif_full_error_msg": "An error occurred during full backup.",
         
         # Settings View
         "checkbox_show_settings": "Show Settings (Masked)",
@@ -123,7 +129,9 @@ TRANSLATIONS = {
         "label_status": "Durum",
         "label_image": "İmaj",
         "btn_backup": "🚀 Yedekle: {name}",
+        "btn_full_backup": "🚀 Tam Yedeklemeyi Başlat",
         "status_backing_up": "Yedekleniyor: {name}...",
+        "status_full_backup_start": "Tüm konteynerler için Tam Yedekleme başlatılıyor...",
         "status_scanning": "🔍 Volume ve Mount noktaları taranıyor...",
         "error_no_pass": "HATA: Yedekleme parolası bulunamadı!",
         "status_failed": "Yedekleme Başarısız ❌",
@@ -136,8 +144,12 @@ TRANSLATIONS = {
         # Notifications
         "notif_success_title": "Yedekleme Başarılı",
         "notif_success_msg": "{name} konteyneri başarıyla yedeklendi.",
+        "notif_full_success_title": "Tam Yedekleme Başarılı",
+        "notif_full_success_msg": "Tüm konteynerler yedeklendi ve buluta senkronize edildi.",
         "notif_error_title": "Yedekleme Hatası",
         "notif_error_msg": "{name} yedeklenirken hata oluştu!",
+        "notif_full_error_title": "Tam Yedekleme Hatası",
+        "notif_full_error_msg": "Tam yedekleme sırasında bir hata oluştu.",
         
         # Settings View
         "checkbox_show_settings": "Ayarları Göster (Maskelenmiş)",
@@ -195,7 +207,9 @@ TRANSLATIONS = {
         "label_status": "Status",
         "label_image": "Image",
         "btn_backup": "🚀 Sichern: {name}",
+        "btn_full_backup": "🚀 Vollständiges Backup starten",
         "status_backing_up": "Sicherung läuft: {name}...",
+        "status_full_backup_start": "Starte vollständiges Backup für alle Container...",
         "status_scanning": "🔍 Scanne Volume- und Mount-Punkte...",
         "error_no_pass": "FEHLER: Backup-Passwort nicht gefunden!",
         "status_failed": "Sicherung fehlgeschlagen ❌",
@@ -208,8 +222,12 @@ TRANSLATIONS = {
         # Notifications
         "notif_success_title": "Sicherung erfolgreich",
         "notif_success_msg": "Container {name} erfolgreich gesichert.",
+        "notif_full_success_title": "Vollständiges Backup erfolgreich",
+        "notif_full_success_msg": "Alle Container gesichert und mit der Cloud synchronisiert.",
         "notif_error_title": "Sicherungsfehler",
         "notif_error_msg": "Fehler beim Sichern von {name}!",
+        "notif_full_error_title": "Sicherungsfehler",
+        "notif_full_error_msg": "Ein Fehler ist während des vollständigen Backups aufgetreten.",
         
         # Settings View
         "checkbox_show_settings": "Einstellungen anzeigen (Maskiert)",

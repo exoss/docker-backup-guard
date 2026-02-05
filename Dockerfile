@@ -9,6 +9,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     curl \
     unzip \
+    p7zip-full \
     && rm -rf /var/lib/apt/lists/*
 
 # Rclone Kurulumu (Betik ile en son sürümü çeker ve kurar)
