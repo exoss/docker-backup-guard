@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  restore-container:
+  rdocker-backup-guard:
     build: .
-    container_name: restore_container
+    container_name: docker-backup-guard
     restart: unless-stopped
     ports:
       - "8501:8501"
@@ -13,7 +13,7 @@ services:
       # Docker Socket (Required to manage containers)
       - /var/run/docker.sock:/var/run/docker.sock
       # Persistence for configuration file
-      - ./.env:/app/.env
+      #- ./.env:/app/.env
       # Backup storage (Mapped to ./backups on host)
       - ./backups:/backups
       # Rclone configuration (Directly mounted as file)
