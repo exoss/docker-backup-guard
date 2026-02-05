@@ -4,6 +4,7 @@ import os
 import time
 import secrets
 import shutil
+import re
 from dotenv import load_dotenv
 from app import engine
 from app import api_handlers
@@ -95,10 +96,29 @@ def show_setup_wizard():
         st.markdown("---")
         st.subheader(get_text(lang, "subheader_rclone"))
         col9, col10 = st.columns(2)
+        
         with col9:
             rclone_path = st.text_input(get_text(lang, "label_rclone_path"), value="/app/rclone.conf", help=get_text(lang, "help_rclone_path"))
+
+        # Read existing rclone.conf if available to auto-fill remote name
+        existing_conf = ""
+        default_remote_name = "remote"
+        
+        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
+            try:
+                with open(rclone_path, "r") as f:
+                    existing_conf = f.read()
+                
+                # Auto-detect remote name from existing config
+                match = re.search(r"^\[(.*?)\]", existing_conf, re.MULTILINE)
+                if match:
+                    default_remote_name = match.group(1)
+            except Exception:
+                pass
+
         with col10:
-            rclone_remote = st.text_input(get_text(lang, "label_rclone_remote"), value="remote", help=get_text(lang, "help_rclone_remote"))
+            rclone_remote = st.text_input(get_text(lang, "label_rclone_remote"), value=default_remote_name, help=get_text(lang, "help_rclone_remote"))
+            rclone_dest = st.text_input(get_text(lang, "label_rclone_dest"), value="backups", help=get_text(lang, "help_rclone_dest"))
 
         # Rclone Config Content Editor
         st.markdown(f"""
@@ -106,15 +126,6 @@ def show_setup_wizard():
         👉 [rclone config docs](https://rclone.org/commands/rclone_config/)  
         ℹ️ *{get_text(lang, 'help_rclone_content_hint')}*
         """)
-
-        # Read existing rclone.conf if available
-        existing_conf = ""
-        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
-            try:
-                with open(rclone_path, "r") as f:
-                    existing_conf = f.read()
-            except Exception:
-                pass
 
         rclone_content = st.text_area(
             get_text(lang, "label_rclone_content"), 
@@ -140,6 +151,16 @@ def show_setup_wizard():
                     except Exception as e:
                         st.error(f"Error saving rclone.conf: {e}")
 
+                # Smart Remote Name Detection
+                final_remote_name = rclone_remote
+                if rclone_content.strip():
+                    match = re.search(r"^\[(.*?)\]", rclone_content, re.MULTILINE)
+                    if match:
+                        detected_name = match.group(1)
+                        # Override if user didn't change default "remote" or left it empty
+                        if rclone_remote.strip() == "remote" or not rclone_remote.strip():
+                            final_remote_name = detected_name
+
                 # Generate random salt for encryption
                 random_salt = secrets.token_hex(16)
                 
@@ -155,7 +176,8 @@ def show_setup_wizard():
                     "TZ": tz,
                     "HEALTHCHECK_URL": healthcheck_url,
                     "RCLONE_CONFIG_PATH": rclone_path,
-                    "RCLONE_REMOTE_NAME": rclone_remote
+                    "RCLONE_REMOTE_NAME": final_remote_name,
+                    "RCLONE_DESTINATION": rclone_dest
                 }
                 
                 if save_env(env_data):
@@ -234,6 +256,7 @@ def show_dashboard():
         RETENTION_DAYS={os.getenv('RETENTION_DAYS')}
         TZ={os.getenv('TZ')}
         RCLONE_REMOTE_NAME={os.getenv('RCLONE_REMOTE_NAME')}
+        RCLONE_DESTINATION={os.getenv('RCLONE_DESTINATION')}
         """, language="bash")
 
 def run():

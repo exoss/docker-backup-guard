@@ -29,6 +29,7 @@ class BackupEngine:
         # Updated default path to match docker-compose mount
         self.rclone_config = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
         self.rclone_remote_name = os.getenv("RCLONE_REMOTE_NAME", "remote")
+        self.rclone_destination = os.getenv("RCLONE_DESTINATION", "backups")
 
     def _log(self, message, level="INFO"):
         """Simple logging function"""
@@ -94,8 +95,8 @@ class BackupEngine:
             return False
 
         try:
-            # Use the configured remote name
-            target_path = f"{self.rclone_remote_name}:backups"
+            # Use the configured remote name and destination
+            target_path = f"{self.rclone_remote_name}:{self.rclone_destination}"
             
             self._log(f"Starting Rclone sync: {source_file} -> {target_path}")
             

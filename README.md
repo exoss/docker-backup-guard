@@ -25,6 +25,30 @@
 *   Docker & Docker Compose installed on your host.
 *   An Rclone configuration file (`rclone.conf`) ready.
 
+### ☁️ Creating rclone.conf (Recommended for Windows Users)
+
+If you are running this on a headless server or Raspberry Pi, the easiest way to generate a valid `rclone.conf` is to use your local Windows machine:
+
+1.  **Download Rclone for Windows:**
+    Visit [rclone.org/downloads](https://rclone.org/downloads/) and download the Windows zip file. Extract it to a folder (e.g., `C:\rclone`).
+
+2.  **Generate Config:**
+    Open a command prompt (cmd) or PowerShell in that folder and run:
+    ```powershell
+    ./rclone.exe config
+    ```
+    Follow the interactive steps to set up your cloud provider (Google Drive, S3, Dropbox, etc.).
+
+3.  **Locate the File:**
+    Once finished, your config file is typically saved at:
+    `C:\Users\YOUR_USERNAME\AppData\Roaming\rclone\rclone.conf`
+
+4.  **Import to Restore Container:**
+    *   Open the file with Notepad.
+    *   Copy the entire content.
+    *   Paste it into the **"Rclone Configuration Content"** box in the Restore Container Setup Wizard.
+    *   Save your settings!
+
 ### Quick Start (Docker Compose)
 
 1.  **Clone the repository:**
