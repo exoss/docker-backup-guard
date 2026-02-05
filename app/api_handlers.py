@@ -60,7 +60,7 @@ class APIHandler:
         """Fetches stack/container info via Portainer API (Not for backup, informational)."""
         # Note: Portainer API structure may vary by version. Here we perform a basic connection test.
         if not self.portainer_url or not self.portainer_token:
-            logger.warning("Portainer settings missing.")
+            # Silent return as Portainer is optional now
             return None
 
         headers = {"X-API-Key": self.portainer_token}

@@ -2,6 +2,7 @@
 import streamlit as st
 import os
 import time
+import secrets
 from dotenv import load_dotenv
 from app import engine
 from app import api_handlers
@@ -54,9 +55,9 @@ def show_setup_wizard():
         st.info(get_text(lang, "info_portainer"))
         col1, col2 = st.columns(2)
         with col1:
-            portainer_url = st.text_input(get_text(lang, "label_portainer_url"), placeholder="http://portainer:9000")
+            portainer_url = st.text_input(f"{get_text(lang, 'label_portainer_url')} (Optional)", placeholder="http://portainer:9000")
         with col2:
-            portainer_token = st.text_input(get_text(lang, "label_portainer_token"), type="password", help=get_text(lang, "help_portainer_token"))
+            portainer_token = st.text_input(f"{get_text(lang, 'label_portainer_token')} (Optional)", type="password", help=get_text(lang, 'help_portainer_token'))
 
         st.markdown("---")
         st.subheader(get_text(lang, "subheader_gotify"))
@@ -94,16 +95,20 @@ def show_setup_wizard():
 
         if submitted:
             # Basic validation
-            if not portainer_url or not portainer_token or not backup_pass:
+            if not backup_pass:
                 st.error(get_text(lang, "error_missing_fields"))
             else:
+                # Generate random salt for encryption
+                random_salt = secrets.token_hex(16)
+                
                 env_data = {
                     "LANGUAGE": lang,
-                    "PORTAINER_URL": portainer_url,
-                    "PORTAINER_TOKEN": portainer_token,
+                    "PORTAINER_URL": portainer_url if portainer_url else "",
+                    "PORTAINER_TOKEN": portainer_token if portainer_token else "",
                     "GOTIFY_URL": gotify_url,
                     "GOTIFY_TOKEN": gotify_token,
                     "BACKUP_PASSWORD": backup_pass,
+                    "ENCRYPTION_SALT": random_salt,
                     "RETENTION_DAYS": retention,
                     "TZ": tz,
                     "HEALTHCHECK_URL": healthcheck_url,

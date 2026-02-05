@@ -5,3 +5,6 @@ __pycache__/
 backups/*
 config/rclone/rclone.conf
 .venv/
+.trae
+.trae/rules
+.trae/rules/restorecontainerrules.md

@@ -3,7 +3,6 @@ import docker
 import os
 import tarfile
 import time
-import subprocess
 from datetime import datetime
 import shutil
 from cryptography.fernet import Fernet
@@ -11,6 +10,7 @@ import base64
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from dotenv import load_dotenv
+from rclone_python import rclone
 
 class BackupEngine:
     def __init__(self):
@@ -36,8 +36,19 @@ class BackupEngine:
         # Gotify integration can be added here in the future
 
     def _generate_key(self, password):
-        """Generates encryption key from password"""
-        salt = b'restore_container_salt' # Fixed salt, should be more secure in production
+        """Generates encryption key from password using env salt"""
+        salt_hex = os.getenv("ENCRYPTION_SALT")
+        
+        if not salt_hex:
+            self._log("SECURITY WARNING: Using default hardcoded salt!", "WARNING")
+            salt = b'restore_container_salt' # Fallback for backward compatibility
+        else:
+            try:
+                salt = bytes.fromhex(salt_hex)
+            except ValueError:
+                self._log("ERROR: Invalid salt format in .env! Using fallback.", "ERROR")
+                salt = b'restore_container_salt'
+
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
@@ -75,7 +86,7 @@ class BackupEngine:
         return output_filename
     
     def _rclone_sync(self, source_file):
-        """Syncs encrypted file to cloud via Rclone"""
+        """Syncs encrypted file to cloud via Rclone (using rclone-python wrapper)"""
         
         if not os.path.exists(self.rclone_config):
             self._log(f"Rclone configuration file not found: {self.rclone_config}", "WARNING")
@@ -85,22 +96,19 @@ class BackupEngine:
             # Use the configured remote name
             target_path = f"{self.rclone_remote_name}:backups"
             
-            cmd = [
-                "rclone", "copy", 
+            self._log(f"Starting Rclone sync: {source_file} -> {target_path}")
+            
+            # Using rclone-python wrapper
+            # We pass the config file path via flags
+            rclone.copy(
                 source_file, 
                 target_path, 
-                "--config", self.rclone_config
-            ]
-            self._log(f"Starting Rclone sync: {' '.join(cmd)}")
+                flags=["--config", self.rclone_config]
+            )
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            self._log("Rclone sync successful.")
+            return True
             
-            if result.returncode == 0:
-                self._log("Rclone sync successful.")
-                return True
-            else:
-                self._log(f"Rclone error: {result.stderr}", "ERROR")
-                return False
         except Exception as e:
             self._log(f"Exception during Rclone operation: {e}", "ERROR")
             return False
@@ -117,6 +125,20 @@ class BackupEngine:
                 candidates.append(container)
         return candidates
 
+    def _resolve_host_path(self, host_path):
+        """
+        Resolves a host path to the container's mount point.
+        If the path starts with /var/lib/docker/volumes, it assumes it's a named volume 
+        and is already mounted at the same path.
+        Otherwise, it prepends /hostfs to access the host filesystem.
+        """
+        if host_path.startswith("/var/lib/docker/volumes"):
+            return host_path
+        
+        # Remove leading slash to join correctly
+        clean_path = host_path.lstrip("/")
+        return os.path.join("/hostfs", clean_path)
+
     def get_container_volumes(self, container):
         """Finds container volume and bind mount paths (on Host)"""
         mounts = []
@@ -125,7 +147,11 @@ class BackupEngine:
             if mount['Type'] in ['bind', 'volume']:
                 source = mount['Source']
                 # Exclude docker socket or system directories if necessary
-                mounts.append(source)
+                if source == "/var/run/docker.sock":
+                    continue
+                    
+                resolved_path = self._resolve_host_path(source)
+                mounts.append(resolved_path)
         return mounts
 
     def perform_backup(self, container_id, backup_password):
