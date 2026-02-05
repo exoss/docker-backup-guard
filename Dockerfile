@@ -19,6 +19,9 @@ RUN curl https://rclone.org/install.sh | bash
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# PYTHONPATH ayarı (Import sorunlarını önlemek için)
+ENV PYTHONPATH=/app
+
 # Uygulama kodlarını kopyala
 COPY . .
 
@@ -29,4 +32,4 @@ EXPOSE 8501
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
 # Uygulamayı başlat
-CMD ["streamlit", "run", "app/main.py", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "main.py", "--server.address=0.0.0.0"]
