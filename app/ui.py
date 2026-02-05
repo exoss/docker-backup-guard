@@ -15,6 +15,11 @@ def save_env(data):
         with open(ENV_FILE, "w") as f:
             for key, value in data.items():
                 f.write(f"{key}={value}\n")
+            f.flush()
+            os.fsync(f.fileno())
+        
+        # Force reload env to update python environment immediately
+        load_dotenv(override=True)
         return True
     except Exception as e:
         st.error(f"Error saving settings: {e}")
@@ -185,7 +190,14 @@ def show_dashboard():
         """, language="bash")
 
 def run():
-    if not os.path.exists(ENV_FILE):
+    # Force reload env to get the latest values
+    load_dotenv(override=True)
+    
+    # Check if critical configuration exists
+    backup_password = os.getenv("BACKUP_PASSWORD")
+    
+    # If password is missing or empty, show setup
+    if not backup_password:
         show_setup_wizard()
     else:
         show_dashboard()
