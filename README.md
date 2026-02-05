@@ -30,11 +30,13 @@
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/exoss/docker-backup-guard.git
-    cd restore-container
+    cd docker-backup-guard
     ```
 
 2.  **Prepare your Rclone config:**
-    Place your `rclone.conf` file in `./config/rclone/rclone.conf`.
+    Place your `rclone.conf` file in **`./config/rclone/rclone.conf`**.
+    > ⚠️ **Critical:** This file is required for cloud sync. Ensure it is correctly placed before starting the container.
+
     *Important:* Ensure your `RCLONE_REMOTE_NAME` in `.env` matches the remote name defined in `rclone.conf`.
 
 3.  **Run with Docker Compose:**
@@ -52,14 +54,19 @@
 3.  Name it `restore-container`.
 4.  Paste the contents of `docker-compose.yml` into the Web Editor.
 5.  **Important:** Since Portainer might not have access to `./config/rclone/rclone.conf` relative path easily, it is recommended to use absolute paths for volumes or ensure the file exists on the node.
+
+    > 💡 **Pro Tip:** When deploying via Portainer, ALWAYS use **absolute paths** for host volumes (e.g., `/home/user/docker-backup-guard/config/rclone/rclone.conf` instead of `./config/...`) to avoid path resolution errors.
+
     Example volume mapping:
     ```yaml
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /path/to/your/backups:/backups
       - /path/to/your/rclone.conf:/app/rclone.conf:ro
-      - /var/lib/docker/volumes:/var/lib/docker/volumes:ro
+      - /var/lib/docker/volumes:/var/lib/docker/volumes:ro # Required for Smart Volume Detection
     ```
+    > 🔧 **Technical Note:** The read-only bind mount `/var/lib/docker/volumes:/var/lib/docker/volumes:ro` is critical. It allows the backup engine to directly access and archive named Docker volumes from the host filesystem, enabling "Smart Volume Detection" without needing to attach volumes to this container manually.
+
 6.  Click **Deploy the stack**.
 
 ## 📖 Usage
