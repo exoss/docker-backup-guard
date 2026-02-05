@@ -25,7 +25,9 @@ class BackupEngine:
         
         # Load env
         load_dotenv()
-        self.rclone_config = os.getenv("RCLONE_CONFIG_PATH", "/config/rclone/rclone.conf")
+        # Updated default path to match docker-compose mount
+        self.rclone_config = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
+        self.rclone_remote_name = os.getenv("RCLONE_REMOTE_NAME", "remote")
 
     def _log(self, message, level="INFO"):
         """Simple logging function"""
@@ -74,18 +76,19 @@ class BackupEngine:
     
     def _rclone_sync(self, source_file):
         """Syncs encrypted file to cloud via Rclone"""
-        # Target remote name is assumed to be 'remote:'. Subject to user configuration.
-        # For simplicity, we put all backups under 'remote:backups'.
         
         if not os.path.exists(self.rclone_config):
             self._log(f"Rclone configuration file not found: {self.rclone_config}", "WARNING")
             return False
 
         try:
+            # Use the configured remote name
+            target_path = f"{self.rclone_remote_name}:backups"
+            
             cmd = [
                 "rclone", "copy", 
                 source_file, 
-                "remote:backups", 
+                target_path, 
                 "--config", self.rclone_config
             ]
             self._log(f"Starting Rclone sync: {' '.join(cmd)}")

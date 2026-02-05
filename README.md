@@ -25,43 +25,42 @@
 *   Docker & Docker Compose installed on your host.
 *   An Rclone configuration file (`rclone.conf`) ready.
 
-### Quick Start
+### Quick Start (Docker Compose)
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/restore-container.git
+    git clone https://github.com/exoss/docker-backup-guard.git
     cd restore-container
     ```
 
 2.  **Prepare your Rclone config:**
-    Place your `rclone.conf` file in a known location (e.g., `./config/rclone/rclone.conf`).
+    Place your `rclone.conf` file in `./config/rclone/rclone.conf`.
+    *Important:* Ensure your `RCLONE_REMOTE_NAME` in `.env` matches the remote name defined in `rclone.conf`.
 
 3.  **Run with Docker Compose:**
-    ```yaml
-    version: '3.8'
-
-    services:
-      restore-container:
-        build: .
-        container_name: restore_container
-        restart: unless-stopped
-        ports:
-          - "8501:8501"
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-          - ./backups:/backups
-          - ./.env:/app/.env
-          - ./config/rclone:/config/rclone:ro
-        environment:
-          - TZ=Europe/Berlin
-    ```
-
     ```bash
     docker-compose up -d --build
     ```
 
 4.  **Access the UI:**
     Open your browser and navigate to `http://localhost:8501`.
+
+### Installation via Portainer Stacks
+
+1.  Log in to Portainer and go to **Stacks**.
+2.  Click **Add stack**.
+3.  Name it `restore-container`.
+4.  Paste the contents of `docker-compose.yml` into the Web Editor.
+5.  **Important:** Since Portainer might not have access to `./config/rclone/rclone.conf` relative path easily, it is recommended to use absolute paths for volumes or ensure the file exists on the node.
+    Example volume mapping:
+    ```yaml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /path/to/your/backups:/backups
+      - /path/to/your/rclone.conf:/app/rclone.conf:ro
+      - /var/lib/docker/volumes:/var/lib/docker/volumes:ro
+    ```
+6.  Click **Deploy the stack**.
 
 ## 📖 Usage
 
@@ -78,6 +77,7 @@ On first launch, you will be greeted by the **Setup Wizard**. Here you can confi
 *   **Portainer & Gotify** credentials.
 *   **Backup Password** (Crucial for encryption!).
 *   **Retention Policy** (How many days to keep backups).
+*   **Rclone Remote Name** (Must match your `rclone.conf`).
 *   **Timezone** (Default: Europe/Berlin).
 
 ### 3. Backup & Restore

@@ -31,6 +31,8 @@ TRANSLATIONS = {
         "subheader_rclone": "☁️ Rclone Settings",
         "label_rclone_path": "Rclone Config Path",
         "help_rclone_path": "Path to rclone.conf mounted inside the container.",
+        "label_rclone_remote": "Rclone Remote Name",
+        "help_rclone_remote": "Name of the remote configured in rclone.conf (e.g., 'gdrive').",
         
         "btn_save": "💾 Save Settings & Start",
         "error_missing_fields": "⛔ Error: Portainer URL, Token, and Backup Password are required!",
@@ -96,6 +98,8 @@ TRANSLATIONS = {
         "subheader_rclone": "☁️ Rclone Ayarları",
         "label_rclone_path": "Rclone Konfigürasyon Yolu",
         "help_rclone_path": "Konteyner içine mount edilen rclone.conf dosyasının yolu.",
+        "label_rclone_remote": "Rclone Remote Adı",
+        "help_rclone_remote": "rclone.conf içinde tanımlanan uzak sunucu adı (örn: 'gdrive').",
         
         "btn_save": "💾 Ayarları Kaydet ve Başlat",
         "error_missing_fields": "⛔ Hata: Portainer URL, Token ve Yedekleme Şifresi zorunludur!",
@@ -161,6 +165,8 @@ TRANSLATIONS = {
         "subheader_rclone": "☁️ Rclone Einstellungen",
         "label_rclone_path": "Rclone Konfigurationspfad",
         "help_rclone_path": "Pfad zur rclone.conf, die im Container eingehängt ist.",
+        "label_rclone_remote": "Rclone Remote Name",
+        "help_rclone_remote": "Name des in rclone.conf konfigurierten Remote (z.B. 'gdrive').",
         
         "btn_save": "💾 Einstellungen speichern & starten",
         "error_missing_fields": "⛔ Fehler: Portainer URL, Token und Backup-Passwort sind erforderlich!",

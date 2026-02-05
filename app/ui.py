@@ -78,7 +78,11 @@ def show_setup_wizard():
 
         st.markdown("---")
         st.subheader(get_text(lang, "subheader_rclone"))
-        rclone_path = st.text_input(get_text(lang, "label_rclone_path"), value="/config/rclone/rclone.conf", help=get_text(lang, "help_rclone_path"))
+        col9, col10 = st.columns(2)
+        with col9:
+            rclone_path = st.text_input(get_text(lang, "label_rclone_path"), value="/app/rclone.conf", help=get_text(lang, "help_rclone_path"))
+        with col10:
+            rclone_remote = st.text_input(get_text(lang, "label_rclone_remote"), value="remote", help=get_text(lang, "help_rclone_remote"))
 
         st.markdown("---")
         submitted = st.form_submit_button(get_text(lang, "btn_save"), type="primary")
@@ -98,7 +102,8 @@ def show_setup_wizard():
                     "RETENTION_DAYS": retention,
                     "TZ": tz,
                     "HEALTHCHECK_URL": healthcheck_url,
-                    "RCLONE_CONFIG_PATH": rclone_path
+                    "RCLONE_CONFIG_PATH": rclone_path,
+                    "RCLONE_REMOTE_NAME": rclone_remote
                 }
                 
                 if save_env(env_data):
@@ -176,6 +181,7 @@ def show_dashboard():
         GOTIFY_URL={os.getenv('GOTIFY_URL')}
         RETENTION_DAYS={os.getenv('RETENTION_DAYS')}
         TZ={os.getenv('TZ')}
+        RCLONE_REMOTE_NAME={os.getenv('RCLONE_REMOTE_NAME')}
         """, language="bash")
 
 def run():
