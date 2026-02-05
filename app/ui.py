@@ -3,6 +3,7 @@ import streamlit as st
 import os
 import time
 import secrets
+import shutil
 from dotenv import load_dotenv
 from app import engine
 from app import api_handlers
@@ -13,6 +14,10 @@ ENV_FILE = ".env"
 def save_env(data):
     """Writes data from the given dictionary to the .env file."""
     try:
+        # Check if ENV_FILE is a directory and remove it if so
+        if os.path.isdir(ENV_FILE):
+            shutil.rmtree(ENV_FILE)
+
         with open(ENV_FILE, "w") as f:
             for key, value in data.items():
                 f.write(f"{key}={value}\n")
