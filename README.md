@@ -4,19 +4,24 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
 ![Rclone](https://img.shields.io/badge/Rclone-333333?style=for-the-badge&logo=rclone&logoColor=white)
+![7-Zip](https://img.shields.io/badge/7--Zip-0096D6?style=for-the-badge&logo=7-zip&logoColor=white)
 
-**Restore Container** is a lightweight, secure, and user-friendly backup solution designed for Docker environments. Optimized for Raspberry Pi (ARM64) and generic Linux servers (AMD64), it provides an all-in-one interface to manage container backups, encryption, and cloud synchronization.
+**Restore Container** is a lightweight, secure, and user-friendly backup solution designed for Docker environments. Optimized for **Raspberry Pi (ARM64)** and generic Linux servers (AMD64), it uses a powerful **7-Zip** based engine to provide high-ratio compression and AES-256 encryption.
+
+It implements a **"Single File Strategy"** to keep your cloud storage organized and uses **"Atomic Snapshots"** to minimize container downtime.
 
 ![Dashboard Screenshot](https://via.placeholder.com/800x400?text=Dashboard+Screenshot+Placeholder)
 
 ## 🚀 Features
 
+*   **Atomic Snapshots:** Minimizes downtime by stopping the container only for the duration of a fast filesystem copy (`cp -rp`), then immediately restarting it before compression begins.
+*   **7-Zip Powered Engine:** Uses **LZMA2** algorithm for superior compression and **AES-256** for military-grade encryption (including filename encryption).
+*   **Single File Strategy:** Instead of cluttering your cloud with hundreds of files, it creates one consolidated **Master Archive** (`Backup_YYYYMMDD.7z`) per session.
 *   **Smart Volume Detection:** Automatically identifies and backs up volumes and bind mounts of containers labeled with `backup.enable=true`.
-*   **Security First:** Uses **AES-256** encryption (Fernet) to secure your data before it leaves the server.
 *   **Cloud Sync:** Integrated **Rclone** support to sync encrypted backups to Google Drive, Dropbox, S3, or any other cloud provider.
+*   **Upload & Delete:** Automatically deletes the local master archive after a successful cloud upload to save SD card space on Raspberry Pi.
 *   **Multi-Language Support:** Fully localized UI in **English**, **Türkçe**, and **Deutsch**.
 *   **Notifications:** Real-time status updates via **Gotify**.
-*   **Setup Wizard:** User-friendly initial setup wizard to configure environment variables without touching the terminal.
 
 ## 🛠️ Installation
 
@@ -57,18 +62,12 @@ If you are running this on a headless server or Raspberry Pi, the easiest way to
     cd docker-backup-guard
     ```
 
-2.  **Prepare your Rclone config:**
-    Place your `rclone.conf` file in **`./config/rclone/rclone.conf`**.
-    > ⚠️ **Critical:** This file is required for cloud sync. Ensure it is correctly placed before starting the container.
-
-    *Important:* Ensure your `RCLONE_REMOTE_NAME` in `.env` matches the remote name defined in `rclone.conf`.
-
-3.  **Run with Docker Compose:**
+2.  **Run with Docker Compose:**
     ```bash
     docker-compose up -d --build
     ```
 
-4.  **Access the UI:**
+3.  **Access the UI:**
     Open your browser and navigate to `http://localhost:8501`.
 
 ### Installation via Portainer Stacks
@@ -77,19 +76,17 @@ If you are running this on a headless server or Raspberry Pi, the easiest way to
 2.  Click **Add stack**.
 3.  Name it `restore-container`.
 4.  Paste the contents of `docker-compose.yml` into the Web Editor.
-5.  **Important:** Since Portainer might not have access to `./config/rclone/rclone.conf` relative path easily, it is recommended to use absolute paths for volumes or ensure the file exists on the node.
-
-    > 💡 **Pro Tip:** When deploying via Portainer, ALWAYS use **absolute paths** for host volumes (e.g., `/home/user/docker-backup-guard/config/rclone/rclone.conf` instead of `./config/...`) to avoid path resolution errors.
+5.  **Important:** Since Portainer might not have access to local relative paths easily, use absolute paths for volumes.
 
     Example volume mapping:
     ```yaml
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /path/to/your/backups:/backups
-      - /path/to/your/rclone.conf:/app/rclone.conf:ro
+      - /path/to/your/rclone_config_dir:/app/rclone.conf # Maps a directory to store the config file
       - /var/lib/docker/volumes:/var/lib/docker/volumes:ro # Required for Smart Volume Detection
     ```
-    > 🔧 **Technical Note:** The read-only bind mount `/var/lib/docker/volumes:/var/lib/docker/volumes:ro` is critical. It allows the backup engine to directly access and archive named Docker volumes from the host filesystem, enabling "Smart Volume Detection" without needing to attach volumes to this container manually.
+    > 🔧 **Technical Note:** The read-only bind mount `/var/lib/docker/volumes:/var/lib/docker/volumes:ro` is critical. It allows the backup engine to directly access and archive named Docker volumes from the host filesystem.
 
 6.  Click **Deploy the stack**.
 
@@ -106,20 +103,20 @@ labels:
 ### 2. Configure via Wizard
 On first launch, you will be greeted by the **Setup Wizard**. Here you can configure:
 *   **Portainer & Gotify** credentials.
-*   **Backup Password** (Crucial for encryption!).
+*   **Backup Password** (Crucial for 7-Zip encryption!).
 *   **Retention Policy** (How many days to keep backups).
 *   **Rclone Remote Name** (Must match your `rclone.conf`).
+*   **Cloud Destination Path** (Folder on the cloud where backups will be stored).
 *   **Timezone** (Default: Europe/Berlin).
 
-### 3. Backup & Restore
-*   Go to the Dashboard.
-*   You will see a list of backup-ready containers.
-*   Click **Backup** to start the process:
-    1.  Container stops.
-    2.  Volumes are compressed (`.tar.gz`).
-    3.  Archive is encrypted (`.enc`).
-    4.  Encrypted file is synced to Cloud (via Rclone).
-    5.  Container restarts.
+### 3. Backup Process
+*   **Full Backup:** Triggers the backup process for ALL enabled containers.
+    1.  **Snapshot Phase:** For each container: Stop -> Fast Copy (`cp -rp`) -> Start.
+    2.  **Compression Phase:** The snapshot folder is compressed into a single `Backup_XXX.7z` file using gentle settings (`-mx=3 -mmt=2`) to prevent system freeze.
+    3.  **Upload Phase:** The master archive is synced to your defined Cloud Destination.
+    4.  **Cleanup Phase:** The local master archive is deleted immediately after upload to save space.
+
+*   **Single Container Backup:** Triggers the same process but only for the selected container.
 
 ## 🌍 Multi-Language Support
 The application automatically detects your language preference during setup. You can choose between:
@@ -128,7 +125,7 @@ The application automatically detects your language preference during setup. You
 *   🇩🇪 Deutsch
 
 ## 🔒 Security Note
-*   **Never share your `BACKUP_PASSWORD`.** Without it, your encrypted backups are irretrievable.
+*   **Never share your `BACKUP_PASSWORD`.** It is used to encrypt the 7-Zip archive. Without it, your data is irretrievable.
 *   Sensitive environment variables are stored in `.env` and are never exposed in the UI logs.
 
 ## 📜 License
