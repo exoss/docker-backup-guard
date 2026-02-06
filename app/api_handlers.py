@@ -2,7 +2,11 @@
 import requests
 import os
 import logging
+import urllib3
 from dotenv import load_dotenv
+
+# Suppress InsecureRequestWarning for local self-signed certs
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Logging settings
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -83,7 +87,8 @@ class APIHandler:
             
         try:
             logger.info(f"Requesting Portainer backup from {url}...")
-            response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60)
+            # verify=False is used because local Portainer often has self-signed certs
+            response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
             response.raise_for_status()
             
             # Write to file
@@ -122,7 +127,8 @@ class APIHandler:
             base_url = url.rstrip("/")
             # Fetch endpoints list as a test
             api_url = f"{base_url}/api/endpoints"
-            response = requests.get(api_url, headers=headers, timeout=5)
+            # verify=False is used because local Portainer often has self-signed certs
+            response = requests.get(api_url, headers=headers, timeout=5, verify=False)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
