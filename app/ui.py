@@ -397,6 +397,19 @@ def show_dashboard():
         disabled = not st.session_state.settings_edit_mode
         
         with st.form("settings_editor"):
+            # Language Selection
+            lang_options = {"English": "en", "Türkçe": "tr", "Deutsch": "de"}
+            current_lang_code = os.getenv("LANGUAGE", "en")
+            current_lang_label = next((k for k, v in lang_options.items() if v == current_lang_code), "English")
+            
+            new_lang_label = st.selectbox(
+                get_text(lang, "lang_select_label"),
+                options=list(lang_options.keys()),
+                index=list(lang_options.keys()).index(current_lang_label),
+                disabled=disabled
+            )
+            
+            st.markdown("---")
             st.subheader(get_text(lang, "header_automation"))
             col_auto1, col_auto2 = st.columns(2)
             with col_auto1:
@@ -453,6 +466,7 @@ def show_dashboard():
             
             if submitted:
                 env_updates = {
+                    "LANGUAGE": lang_options[new_lang_label],
                     "SCHEDULE_ENABLE": str(new_schedule_enable).lower(),
                     "SCHEDULE_TIME": new_schedule_time,
                     "PORTAINER_URL": new_portainer_url,
