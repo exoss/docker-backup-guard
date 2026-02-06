@@ -9,6 +9,7 @@ import re
 from dotenv import load_dotenv
 from app import engine
 from app import api_handlers
+from app.scheduler_service import start_scheduler
 from app.languages import get_text, TRANSLATIONS
 
 ENV_FILE = ".env"
@@ -140,7 +141,24 @@ def show_setup_wizard():
         )
 
         st.markdown("---")
-        submitted = st.form_submit_button(get_text(lang, "btn_save"), type="primary")
+        
+        # Action Buttons
+        col_btn1, col_btn2 = st.columns([1, 1])
+        with col_btn1:
+            test_conn = st.form_submit_button(get_text(lang, "btn_test_connection"))
+        with col_btn2:
+            submitted = st.form_submit_button(get_text(lang, "btn_save"), type="primary")
+
+        if test_conn:
+            if portainer_url and portainer_token:
+                with st.spinner("Testing connection..."):
+                    result = api_handlers.APIHandler.test_portainer_connection(portainer_url, portainer_token)
+                    if result:
+                        st.success(get_text(lang, "status_test_success"))
+                    else:
+                        st.error(get_text(lang, "status_test_failed"))
+            else:
+                st.warning(get_text(lang, "error_missing_fields"))
 
         if submitted:
             # Basic validation
@@ -287,26 +305,57 @@ def show_dashboard():
         disabled = not st.session_state.settings_edit_mode
         
         with st.form("settings_editor"):
+            st.subheader(get_text(lang, "header_automation"))
+            col_auto1, col_auto2 = st.columns(2)
+            with col_auto1:
+                # Scheduler Settings
+                current_enabled = os.getenv("SCHEDULE_ENABLE", "false").lower() == "true"
+                new_schedule_enable = st.checkbox(get_text(lang, "label_schedule_enable"), value=current_enabled, disabled=disabled)
+            with col_auto2:
+                new_schedule_time = st.text_input(get_text(lang, "label_schedule_time"), value=os.getenv("SCHEDULE_TIME", "03:00"), help=get_text(lang, "help_schedule_time"), disabled=disabled)
+
+            st.markdown("---")
+            
             col_s1, col_s2 = st.columns(2)
             with col_s1:
                 new_portainer_url = st.text_input("Portainer URL", value=os.getenv("PORTAINER_URL", ""), disabled=disabled)
                 new_gotify_url = st.text_input("Gotify URL", value=os.getenv("GOTIFY_URL", ""), disabled=disabled)
-                new_retention = st.number_input("Retention (Days)", value=int(os.getenv("RETENTION_DAYS", "7")), min_value=1, disabled=disabled)
+                new_healthcheck_url = st.text_input(get_text(lang, "label_healthcheck"), value=os.getenv("HEALTHCHECK_URL", ""), disabled=disabled)
             with col_s2:
                 new_portainer_token = st.text_input("Portainer Token", value=os.getenv("PORTAINER_TOKEN", ""), type="password", disabled=disabled)
                 new_gotify_token = st.text_input("Gotify Token", value=os.getenv("GOTIFY_TOKEN", ""), type="password", disabled=disabled)
+                new_retention = st.number_input("Retention (Days)", value=int(os.getenv("RETENTION_DAYS", "7")), min_value=1, disabled=disabled)
                 new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
-                
-            submitted = st.form_submit_button(get_text(lang, "btn_save_changes"), disabled=disabled)
+            
+            st.markdown("---")
+            col_b1, col_b2 = st.columns([1, 1])
+            with col_b1:
+                test_conn = st.form_submit_button(get_text(lang, "btn_test_connection"), disabled=disabled)
+            with col_b2:
+                submitted = st.form_submit_button(get_text(lang, "btn_save_changes"), disabled=disabled)
+            
+            if test_conn:
+                if new_portainer_url and new_portainer_token:
+                    with st.spinner("Testing..."):
+                        res = api_handlers.APIHandler.test_portainer_connection(new_portainer_url, new_portainer_token)
+                        if res:
+                            st.success(get_text(lang, "status_test_success"))
+                        else:
+                            st.error(get_text(lang, "status_test_failed"))
+                else:
+                    st.warning("Portainer URL & Token required.")
             
             if submitted:
                 env_updates = {
+                    "SCHEDULE_ENABLE": str(new_schedule_enable).lower(),
+                    "SCHEDULE_TIME": new_schedule_time,
                     "PORTAINER_URL": new_portainer_url,
                     "PORTAINER_TOKEN": new_portainer_token,
                     "GOTIFY_URL": new_gotify_url,
                     "GOTIFY_TOKEN": new_gotify_token,
                     "RETENTION_DAYS": new_retention,
-                    "TZ": new_tz
+                    "TZ": new_tz,
+                    "HEALTHCHECK_URL": new_healthcheck_url
                 }
                 if save_env(env_updates):
                     st.success("Settings saved! Reloading...")
@@ -368,6 +417,9 @@ def show_dashboard():
 def run():
     # Force reload env to get the latest values
     load_dotenv(dotenv_path=get_env_path(), override=True)
+    
+    # Start Scheduler in Background (Singleton)
+    start_scheduler()
     
     # Check if critical configuration exists
     backup_password = os.getenv("BACKUP_PASSWORD")

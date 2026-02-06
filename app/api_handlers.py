@@ -108,13 +108,23 @@ class APIHandler:
             # Silent return as Portainer is optional now
             return None
 
-        headers = {"X-API-Key": self.portainer_token}
+        return APIHandler.test_portainer_connection(self.portainer_url, self.portainer_token)
+
+    @staticmethod
+    def test_portainer_connection(url, token):
+        """Tests connectivity to Portainer API using provided credentials."""
+        if not url or not token:
+            return None
+
+        headers = {"X-API-Key": token}
         try:
-            # Fetch endpoints list
-            url = f"{self.portainer_url}/api/endpoints"
-            response = requests.get(url, headers=headers, timeout=10)
+            # Ensure URL doesn't end with slash
+            base_url = url.rstrip("/")
+            # Fetch endpoints list as a test
+            api_url = f"{base_url}/api/endpoints"
+            response = requests.get(api_url, headers=headers, timeout=5)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Portainer API error: {e}")
+            logger.error(f"Portainer Connection Test failed: {e}")
             return None
