@@ -424,6 +424,16 @@ def show_dashboard():
                 new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
             
             st.markdown("---")
+            st.subheader(get_text(lang, "header_login"))
+            col_w1, col_w2 = st.columns(2)
+            with col_w1:
+                web_user_display = decrypt_value(os.getenv("WEB_UI_USERNAME", "admin"))
+                new_web_ui_username = st.text_input(get_text(lang, "label_web_ui_username"), value=web_user_display, disabled=disabled)
+            with col_w2:
+                web_pass_display = decrypt_value(os.getenv("WEB_UI_PASSWORD", "admin"))
+                new_web_ui_password = st.text_input(get_text(lang, "label_web_ui_password"), value=web_pass_display, type="password", disabled=disabled)
+
+            st.markdown("---")
             col_b1, col_b2 = st.columns([1, 1])
             with col_b1:
                 test_conn = st.form_submit_button(get_text(lang, "btn_test_connection"), disabled=disabled)
@@ -451,7 +461,9 @@ def show_dashboard():
                     "GOTIFY_TOKEN": new_gotify_token,
                     "RETENTION_DAYS": new_retention,
                     "TZ": new_tz,
-                    "HEALTHCHECK_URL": new_healthcheck_url
+                    "HEALTHCHECK_URL": new_healthcheck_url,
+                    "WEB_UI_USERNAME": new_web_ui_username,
+                    "WEB_UI_PASSWORD": new_web_ui_password
                 }
                 if save_env(env_updates):
                     st.success("Settings saved! Reloading...")
