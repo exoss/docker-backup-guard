@@ -230,13 +230,103 @@ class BackupEngine:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
 
+    def _group_containers(self, candidates):
+        """Groups containers by Docker Compose Project."""
+        groups = {}
+        for container in candidates:
+            # Check for com.docker.compose.project label
+            project = container.labels.get("com.docker.compose.project")
+            if project:
+                if project not in groups:
+                    groups[project] = []
+                groups[project].append(container)
+            else:
+                # Standalone containers get their own group
+                groups[container.name] = [container]
+        return groups
+
+    def _process_group_backup(self, group_name, containers, backup_tree_root):
+        """
+        Stops all containers in the group, copies their volumes preserving structure, 
+        and restarts them immediately.
+        """
+        self._log(f"Processing Group: {group_name} ({len(containers)} containers)")
+        
+        # 1. Collect Unique Volume Paths
+        unique_paths = set()
+        for container in containers:
+            paths = self.get_container_volumes(container)
+            unique_paths.update(paths)
+            
+        if not unique_paths:
+            self._log(f"No volumes found for group {group_name}.", "WARNING")
+            return
+
+        # 2. Stop Phase
+        stopped_containers = []
+        try:
+            self._log(f"Stopping group {group_name}...")
+            for container in containers:
+                try:
+                    container.stop()
+                    stopped_containers.append(container)
+                except Exception as e:
+                    self._log(f"Failed to stop {container.name}: {e}", "WARNING")
+
+            # 3. Copy Phase (Snapshot)
+            for src in unique_paths:
+                try:
+                    # Remove /hostfs prefix to build destination path
+                    # src: /hostfs/opt/npm/data -> relative: opt/npm/data
+                    if src.startswith("/hostfs"):
+                        relative_path = src[len("/hostfs"):].lstrip("/")
+                    else:
+                        # Handle named volumes or other paths
+                        relative_path = src.lstrip("/")
+                    
+                    dest = os.path.join(backup_tree_root, relative_path)
+                    dest_parent = os.path.dirname(dest)
+                    
+                    if not os.path.exists(dest_parent):
+                        os.makedirs(dest_parent, exist_ok=True)
+                    
+                    self._log(f"Snapshotting: {src} -> {dest}")
+                    
+                    # Check if src is directory
+                    if os.path.isdir(src):
+                        # cp -rp src dest
+                        # If dest does not exist, it creates dest as copy of src
+                        cmd = ["cp", "-rp", src, dest]
+                        subprocess.run(cmd, check=True, timeout=300) # 5 min timeout per volume
+                    else:
+                        # File bind mount
+                        cmd = ["cp", "-p", src, dest]
+                        subprocess.run(cmd, check=True, timeout=60)
+
+                except subprocess.TimeoutExpired:
+                     self._log(f"Timeout while copying {src}", "ERROR")
+                except Exception as e:
+                    self._log(f"Error copying {src}: {e}", "ERROR")
+
+        except Exception as e:
+            self._log(f"Error processing group {group_name}: {e}", "ERROR")
+            
+        finally:
+            # 4. Start Phase
+            self._log(f"Restarting group {group_name}...")
+            for container in stopped_containers:
+                try:
+                    container.start()
+                except Exception as e:
+                    self._log(f"Failed to start {container.name}: {e}", "ERROR")
+
     def perform_backup(self, container_id=None):
         """
-        Executes the 'Single File Strategy' backup process using Snapshot logic.
-        Refactored to match 'ornek.sh' performance:
-        1. Snapshot Phase: Stop -> Copy (cp -rp) -> Start for each container (Fast, Minimal Downtime).
-        2. Compression Phase: Compress the entire snapshot folder with gentle settings (-mx=3 -mmt=2) to prevent freezing.
-        3. Upload & Cleanup.
+        Executes the 'Stack-Aware' backup process.
+        1. Groups containers by Docker Compose Project.
+        2. Stops the entire stack -> Copies volumes (preserving structure) -> Starts stack.
+        3. Compresses the entire file tree.
+        4. Uploads to Cloud.
         """
         if not self.backup_password:
             self._log("ERROR: BACKUP_PASSWORD is not set!", "ERROR")
@@ -245,6 +335,11 @@ class BackupEngine:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         temp_dir = os.path.join(self.backup_root, f"temp_{timestamp}")
         os.makedirs(temp_dir, exist_ok=True)
+        
+        # Create a root for the file tree inside temp_dir
+        # We use 'hostfs' to indicate these are files from the host
+        backup_tree_root = os.path.join(temp_dir, "hostfs")
+        os.makedirs(backup_tree_root, exist_ok=True)
         
         candidates = self.get_backup_candidates()
         
@@ -261,86 +356,30 @@ class BackupEngine:
             self._log(f"Starting Backup for {len(candidates)} containers...")
 
         # Step 1.5: Portainer API Backup (Standalone)
-        # Attempt to backup Portainer via API using stored credentials, regardless of containers.
-        try:
-            api = APIHandler()
-            if api.portainer_url and api.portainer_token:
-                self._log("Portainer credentials found. Attempting API Backup...")
-                portainer_stage_dir = os.path.join(temp_dir, "Portainer_API_Backup")
-                os.makedirs(portainer_stage_dir, exist_ok=True)
-                backup_file = os.path.join(portainer_stage_dir, f"portainer_config_{timestamp}.tar.gz")
-                
-                if api.download_portainer_backup(backup_file, password=self.backup_password):
-                    self._log(f"Portainer API backup successful: {backup_file}")
-                else:
-                    self._log("Portainer API backup failed.", "WARNING")
-        except Exception as e:
-            self._log(f"Error during Portainer API backup: {e}", "WARNING")
+        # Only run if full backup (no container_id) or if specifically requested?
+        # Let's run it always as it's quick and useful context.
+        self.perform_portainer_backup()
 
-        # Step 2: Snapshot Phase (Stop -> Copy -> Start)
-        for container in candidates:
-            try:
-                container_name = container.name
-                self._log(f"Processing container: {container_name}")
-                
-                source_paths = self.get_container_volumes(container)
-                if not source_paths:
-                    self._log(f"No volumes found for {container_name}, skipping.", "WARNING")
-                    continue
-
-                # Prepare container-specific staging dir
-                container_stage_dir = os.path.join(temp_dir, container_name)
-                os.makedirs(container_stage_dir, exist_ok=True)
-
-                # Stop Container
-                self._log(f"Stopping {container_name}...")
-                container.stop()
-                
-                try:
-                    # Copy Volumes (Fast I/O copy)
-                    for i, src in enumerate(source_paths):
-                        # Destination: temp_dir/container_name/vol_X_basename
-                        # We use index to avoid name collisions if multiple volumes have same basename
-                        basename = os.path.basename(src.rstrip("/"))
-                        dest = os.path.join(container_stage_dir, f"{i}_{basename}")
-                        
-                        # Use subprocess cp -rp for preservation and speed
-                        # cp -rp /hostfs/path /backups/temp_.../container/0_data
-                        cmd_cp = ["cp", "-rp", src, dest]
-                        self._log(f"Snapshotting {src} -> {dest}")
-                        subprocess.run(cmd_cp, check=True)
-                        
-                except subprocess.CalledProcessError as e:
-                    self._log(f"Snapshot Error for {container_name}: {e}", "ERROR")
-                except Exception as e:
-                    self._log(f"Error creating snapshot for {container_name}: {e}", "ERROR")
-                        
-                finally:
-                    # Start Container immediately
-                    self._log(f"Starting {container_name}...")
-                    container.start()
-            
-            except Exception as e:
-                self._log(f"Error processing container {container.name}: {e}", "ERROR")
+        # Step 2: Grouping & Snapshot
+        groups = self._group_containers(candidates)
+        self._log(f"Found {len(groups)} backup groups (Stacks/Standalone).")
+        
+        for group_name, containers in groups.items():
+            self._process_group_backup(group_name, containers, backup_tree_root)
 
         # Step 3: Compression Phase (Heavy Lifting)
-        # Services are UP, now we compress the staging folder
         try:
             master_archive_name = f"Backup_{timestamp}.7z"
             master_archive_path = os.path.join(self.backup_root, master_archive_name)
             
             # Check if temp dir has content
-            if not os.listdir(temp_dir):
+            if not os.listdir(backup_tree_root):
                 self._log("No data found in staging directory. Aborting backup.", "ERROR")
                 shutil.rmtree(temp_dir)
                 return False
 
             self._log("Compressing Backup Archive (Gentle Mode: -mx=3)...")
             
-            # 7-Zip Command aligned with ornek.sh for Raspberry Pi stability
-            # -mx=3: Fast compression (low CPU/RAM)
-            # -mmt=2: Limit to 2 threads to prevent freeze
-            # -mhe=on: Encrypt filenames
             cmd_master = [
                 "7z", "a", "-t7z",
                 "-mx=3", "-mmt=2",
@@ -367,7 +406,7 @@ class BackupEngine:
             success = self._rclone_sync(master_archive_path)
             
             if success:
-                # Immediate cleanup for successful upload (Upload & Delete)
+                # Immediate cleanup for successful upload
                 self._log(f"Cloud sync successful. Deleting local archive: {master_archive_name}")
                 try:
                     os.remove(master_archive_path)
@@ -375,7 +414,7 @@ class BackupEngine:
                     self._log(f"Error deleting local archive: {e}", "WARNING")
             
             return success
-
+            
         finally:
             # Step 5: Cleanup Staging
             if os.path.exists(temp_dir):
