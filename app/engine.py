@@ -96,16 +96,39 @@ class BackupEngine:
         return os.path.join("/hostfs", clean_path)
 
     def get_container_volumes(self, container):
-        """Finds container volume and bind mount paths (on Host)"""
+        """Finds container volume and bind mount paths (on Host), excluding system paths."""
         mounts = []
+        # Define excluded system paths that should NEVER be backed up
+        EXCLUDED_PATHS = [
+            "/", "/proc", "/sys", "/dev", "/run", "/tmp", 
+            "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
+            "/var/run/docker.sock"
+        ]
+        
         for mount in container.attrs['Mounts']:
             # Bind mounts and Volumes
             if mount['Type'] in ['bind', 'volume']:
                 source = mount['Source']
-                # Exclude docker socket or system directories if necessary
-                if source == "/var/run/docker.sock":
+                
+                # --- EXCLUSION LOGIC ---
+                # 1. Exact match exclusion
+                if source in EXCLUDED_PATHS:
+                    self._log(f"Skipping system path: {source} (Container: {container.name})", "WARNING")
                     continue
                     
+                # 2. Subdirectory match for critical system paths (e.g. /proc/cpuinfo, /dev/mem)
+                # We check if source starts with any critical path + "/"
+                if any(source.startswith(p + "/") for p in ["/proc", "/sys", "/dev", "/run"]):
+                    self._log(f"Skipping system sub-path: {source} (Container: {container.name})", "WARNING")
+                    continue
+                
+                # 3. Special case: Root mount (/)
+                # Dashdot/Glances often mount / as /hostfs. If source is /, we skip.
+                if source == "/":
+                    self._log(f"Skipping Root FS mount: {source} (Container: {container.name})", "WARNING")
+                    continue
+                # -----------------------
+
                 resolved_path = self._resolve_host_path(source)
                 mounts.append(resolved_path)
         return mounts
