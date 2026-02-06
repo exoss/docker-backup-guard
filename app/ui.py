@@ -93,7 +93,6 @@ def check_password():
             # Safe delete
             if "password" in st.session_state: del st.session_state["password"]
             if "username" in st.session_state: del st.session_state["username"]
-            st.rerun()
         else:
             st.session_state["password_correct"] = False
 
@@ -109,6 +108,8 @@ def check_password():
     
     if st.button(get_text(lang, "btn_login")):
         password_entered()
+        if st.session_state.get("password_correct", False):
+            st.rerun()
 
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
         st.error(get_text(lang, "error_login_failed"))
