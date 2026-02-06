@@ -98,6 +98,8 @@ TRANSLATIONS = {
         "toggle_edit": "Unlock / Edit Settings",
         "header_logs": "System Logs",
         "btn_refresh_logs": "Refresh Logs",
+        "btn_clear_logs": "🗑️ Clear Logs",
+        "status_logs_cleared": "✅ Logs cleared successfully.",
         "btn_save_changes": "Save Changes",
         
         # Portainer Backup
@@ -246,6 +248,8 @@ TRANSLATIONS = {
         "toggle_edit": "Kilit Aç / Düzenle",
         "header_logs": "Sistem Logları",
         "btn_refresh_logs": "Logları Yenile",
+        "btn_clear_logs": "🗑️ Logları Temizle",
+        "status_logs_cleared": "✅ Loglar başarıyla temizlendi.",
         "btn_save_changes": "Değişiklikleri Kaydet",
         
         # Portainer Backup
@@ -393,7 +397,9 @@ TRANSLATIONS = {
         "help_schedule_time": "Uhrzeit für die tägliche Sicherung (24h-Format).",
         "toggle_edit": "Entsperren / Bearbeiten",
         "header_logs": "Systemprotokolle",
-        "btn_refresh_logs": "Protokolle aktualisieren",
+        "btn_refresh_logs": "Logs aktualisieren",
+        "btn_clear_logs": "🗑️ Logs löschen",
+        "status_logs_cleared": "✅ Logs erfolgreich gelöscht.",
         "btn_save_changes": "Änderungen speichern",
         
         # Portainer Backup

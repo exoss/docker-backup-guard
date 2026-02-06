@@ -622,8 +622,20 @@ def show_dashboard():
     # --- TAB 4: LOGS ---
     with tab_logs:
         st.header(get_text(lang, "header_logs"))
-        if st.button(get_text(lang, "btn_refresh_logs")):
-            st.rerun()
+        
+        col_l1, col_l2 = st.columns([1, 4])
+        with col_l1:
+            if st.button(get_text(lang, "btn_refresh_logs")):
+                st.rerun()
+        with col_l2:
+            if st.button(get_text(lang, "btn_clear_logs"), type="primary"):
+                log_path = "logs/app.log"
+                if os.path.exists(log_path):
+                    with open(log_path, "w") as f:
+                        f.write("") # Clear file
+                    st.success(get_text(lang, "status_logs_cleared"))
+                    time.sleep(1)
+                    st.rerun()
             
         log_path = "logs/app.log"
         if os.path.exists(log_path):
