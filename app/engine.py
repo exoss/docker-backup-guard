@@ -154,13 +154,38 @@ class BackupEngine:
                 mounts.append(resolved_path)
         return mounts
 
+    def _is_portainer(self, container):
+        """Checks if a container is Portainer based on image name."""
+        try:
+            image_tags = container.image.tags
+            for tag in image_tags:
+                if "portainer/portainer" in tag:
+                    return True
+        except:
+            pass
+        # Fallback: check name
+        if "portainer" in container.name.lower():
+            return True
+        return False
+
     def get_backup_candidates(self):
         """Finds containers to backup (backup.enable=true)"""
         if not self.client:
             return []
         
         candidates = []
+        # Check if Portainer API is configured
+        api_configured = os.getenv("PORTAINER_URL") and os.getenv("PORTAINER_TOKEN")
+
         for container in self.client.containers.list():
+            # Check if it is Portainer
+            if self._is_portainer(container):
+                if api_configured:
+                    self._log(f"Detected Portainer container: {container.name}. Skipping file-level backup in favor of API backup.", "INFO")
+                    continue
+                else:
+                    self._log(f"Detected Portainer container: {container.name}, but API credentials missing. Falling back to Stop/Copy backup.", "WARNING")
+
             labels = container.labels
             if labels.get("backup.enable") == "true":
                 candidates.append(container)

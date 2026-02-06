@@ -491,7 +491,11 @@ def show_dashboard():
             for container in candidates:
                 with st.expander(f"📦 {container.name} ({container.short_id})"):
                     st.write(f"**{get_text(lang, 'label_status')}:** {container.status}")
-                    st.write(f"**{get_text(lang, 'label_image')}:** {container.image.tags}")
+                    try:
+                        image_tags = container.image.tags
+                    except Exception:
+                        image_tags = "Unknown (Permission Denied)"
+                    st.write(f"**{get_text(lang, 'label_image')}:** {image_tags}")
                     
                     if st.button(get_text(lang, "btn_backup").format(name=container.name), key=f"btn_{container.id}"):
                         with st.status(get_text(lang, "status_backing_up").format(name=container.name), expanded=True) as status:

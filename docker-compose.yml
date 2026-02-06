@@ -16,7 +16,7 @@ services:
       - CONFIGS=0
       - DISTRIBUTION=0
       - EXEC=0
-      - IMAGES=0
+      - IMAGES=1
       - NETWORKS=0
       - NODES=0
       - PLUGINS=0
