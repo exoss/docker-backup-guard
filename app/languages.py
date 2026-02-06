@@ -121,7 +121,18 @@ TRANSLATIONS = {
         "progress_compression_failed": "❌ Compression Failed: {error}",
         "progress_uploading": "☁️ Uploading to Cloud...",
         "progress_upload_success": "✅ Cloud Sync Successful. Cleaning up local archive.",
-        "progress_upload_failed": "⚠️ Cloud Sync Failed."
+        "progress_upload_failed": "⚠️ Cloud Sync Failed.",
+
+        # Login
+        "label_username": "Username",
+        "label_password": "Password",
+        "btn_login": "Login",
+        "error_login_failed": "❌ Invalid username or password",
+        "btn_logout": "Logout",
+        "header_login": "🔐 Admin Login",
+        "label_web_ui_username": "Web UI Username",
+        "label_web_ui_password": "Web UI Password",
+        "help_web_ui_creds": "Credentials to access this dashboard."
     },
     
     "tr": {
@@ -245,9 +256,20 @@ TRANSLATIONS = {
         "progress_compression_failed": "❌ Sıkıştırma Başarısız: {error}",
         "progress_uploading": "☁️ Buluta Yükleniyor...",
         "progress_upload_success": "✅ Bulut Senkronizasyonu Başarılı. Yerel arşiv temizleniyor.",
-        "progress_upload_failed": "⚠️ Bulut Senkronizasyonu Başarısız."
+        "progress_upload_failed": "⚠️ Bulut Senkronizasyonu Başarısız.",
+
+        # Login
+        "label_username": "Kullanıcı Adı",
+        "label_password": "Şifre",
+        "btn_login": "Giriş Yap",
+        "error_login_failed": "❌ Geçersiz kullanıcı adı veya şifre",
+        "btn_logout": "Çıkış Yap",
+        "header_login": "🔐 Yönetici Girişi",
+        "label_web_ui_username": "Web Arayüz Kullanıcı Adı",
+        "label_web_ui_password": "Web Arayüz Şifresi",
+        "help_web_ui_creds": "Bu panele erişim için kullanılacak kimlik bilgileri."
     },
-    
+
     "de": {
         # Titles
         "page_title_setup": "Docker Backup Guard - Einrichtung",
@@ -368,8 +390,19 @@ TRANSLATIONS = {
         "progress_compressing": "🗜️ Komprimiere Archiv (dies kann eine Weile dauern)...",
         "progress_compression_failed": "❌ Komprimierung fehlgeschlagen: {error}",
         "progress_uploading": "☁️ Hochladen in die Cloud...",
-        "progress_upload_success": "✅ Cloud-Sync erfolgreich. Bereinige lokales Archiv.",
-        "progress_upload_failed": "⚠️ Cloud-Sync fehlgeschlagen."
+        "progress_upload_success": "✅ Cloud-Synchronisierung erfolgreich. Lokales Archiv wird bereinigt.",
+        "progress_upload_failed": "⚠️ Cloud-Synchronisierung fehlgeschlagen.",
+
+        # Login
+        "label_username": "Benutzername",
+        "label_password": "Passwort",
+        "btn_login": "Anmelden",
+        "error_login_failed": "❌ Ungültiger Benutzername oder Passwort",
+        "btn_logout": "Abmelden",
+        "header_login": "🔐 Admin-Login",
+        "label_web_ui_username": "Web-UI Benutzername",
+        "label_web_ui_password": "Web-UI Passwort",
+        "help_web_ui_creds": "Anmeldeinformationen für dieses Dashboard."
     }
 }
 

@@ -11,6 +11,7 @@ from app import engine
 from app import api_handlers
 from app.scheduler_service import start_scheduler
 from app.languages import get_text, TRANSLATIONS
+from app.security import encrypt_value, decrypt_value
 
 ENV_FILE = ".env"
 
@@ -21,13 +22,35 @@ def get_env_path():
         return os.path.join(ENV_FILE, "config.env")
     return ENV_FILE
 
-def save_env(data):
-    """Writes data from the given dictionary to the .env file."""
+def save_env(updates):
+    """Updates the .env file with the given dictionary, preserving existing keys."""
+    target_file = get_env_path()
+    current_env = {}
+    
+    # 1. Read existing
+    if os.path.exists(target_file):
+        try:
+            with open(target_file, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and "=" in line and not line.startswith("#"):
+                        key, value = line.split("=", 1)
+                        current_env[key] = value
+        except Exception:
+            pass
+
+    # 2. Update with new values
+    current_env.update(updates)
+    
+    # 3. Encrypt Sensitive Keys
+    SENSITIVE_KEYS = ["PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME"]
+    for key in SENSITIVE_KEYS:
+        if key in current_env:
+            current_env[key] = encrypt_value(current_env[key])
+
     try:
-        target_file = get_env_path()
-        
         with open(target_file, "w") as f:
-            for key, value in data.items():
+            for key, value in current_env.items():
                 f.write(f"{key}={value}\n")
             f.flush()
             os.fsync(f.fileno())
@@ -38,6 +61,54 @@ def save_env(data):
     except Exception as e:
         st.error(f"Error saving settings: {e}")
         return False
+
+def check_password():
+    """Checks if the user is logged in."""
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # If no credentials set in env (first run or not setup), allow through to Setup
+    # But Setup handles its own state. 
+    # If .env exists but no WEB_UI credentials, default to admin/admin or force setup?
+    # Let's check env first.
+    env_user = decrypt_value(os.getenv("WEB_UI_USERNAME"))
+    env_pass = decrypt_value(os.getenv("WEB_UI_PASSWORD"))
+
+    if not env_user or not env_pass:
+        # If setup is done but no creds, maybe legacy? Default to admin/admin or let pass?
+        # Safe default: if BACKUP_PASSWORD exists (setup done), but no web creds, enforce admin/admin
+        if os.getenv("BACKUP_PASSWORD"):
+            env_user = "admin"
+            env_pass = "admin"
+        else:
+            return False # Should go to setup
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if st.session_state["username"] == env_user and st.session_state["password"] == env_pass:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # don't store password
+            del st.session_state["username"]
+        else:
+            st.session_state["password_correct"] = False
+
+    # Language for Login Screen (Try to detect or default)
+    lang = os.getenv("LANGUAGE", "en")
+
+    st.set_page_config(page_title="Docker Backup Guard - Login", page_icon="🔒", layout="centered")
+    
+    st.title(get_text(lang, "header_login"))
+    
+    st.text_input(get_text(lang, "label_username"), key="username")
+    st.text_input(get_text(lang, "label_password"), type="password", on_change=password_entered, key="password")
+    
+    if st.button(get_text(lang, "btn_login")):
+        password_entered()
+
+    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+        st.error(get_text(lang, "error_login_failed"))
+    
+    return False
 
 def show_setup_wizard():
     """Displays the initial setup wizard."""
@@ -94,6 +165,14 @@ def show_setup_wizard():
             tz = st.text_input(get_text(lang, "label_timezone"), value="Europe/Berlin")
         with col8:
             healthcheck_url = st.text_input(get_text(lang, "label_healthcheck"), placeholder="https://hc-ping.com/...")
+
+        st.markdown("---")
+        st.subheader(get_text(lang, "header_login"))
+        col_u1, col_u2 = st.columns(2)
+        with col_u1:
+            web_user = st.text_input(get_text(lang, "label_web_ui_username"), value="admin")
+        with col_u2:
+            web_pass = st.text_input(get_text(lang, "label_web_ui_password"), type="password", help=get_text(lang, "help_web_ui_creds"))
 
         st.markdown("---")
         st.subheader(get_text(lang, "subheader_rclone"))
@@ -207,7 +286,9 @@ def show_setup_wizard():
                     "HEALTHCHECK_URL": healthcheck_url,
                     "RCLONE_CONFIG_PATH": real_rclone_path,
                     "RCLONE_REMOTE_NAME": final_remote_name,
-                    "RCLONE_DESTINATION": rclone_dest
+                    "RCLONE_DESTINATION": rclone_dest,
+                    "WEB_UI_USERNAME": web_user,
+                    "WEB_UI_PASSWORD": web_pass
                 }
                 
                 if save_env(env_data):
@@ -226,6 +307,11 @@ def show_dashboard():
     st.sidebar.title(get_text(lang, "menu_title"))
     st.sidebar.success(get_text(lang, "system_online"))
     
+    # Logout Button
+    if st.sidebar.button(get_text(lang, "btn_logout")):
+        st.session_state["password_correct"] = False
+        st.rerun()
+
     st.title(get_text(lang, "header_dashboard"))
     
     # Initialize Engine
@@ -267,6 +353,8 @@ def show_dashboard():
         # Quick Action: Full Backup
         if st.button(get_text(lang, "btn_full_backup"), type="primary", use_container_width=True):
             with st.status(get_text(lang, "status_full_backup_start"), expanded=True) as status:
+                # Check password (decrypt first to verify existence, though checking the encrypted string is also fine for existence)
+                # But perform_backup needs the real password. engine handles decryption.
                 if not os.getenv("BACKUP_PASSWORD"):
                     st.error(get_text(lang, "error_no_pass"))
                     status.update(label=get_text(lang, "status_failed"), state="error")
@@ -326,8 +414,12 @@ def show_dashboard():
                 new_gotify_url = st.text_input("Gotify URL", value=os.getenv("GOTIFY_URL", ""), disabled=disabled)
                 new_healthcheck_url = st.text_input(get_text(lang, "label_healthcheck"), value=os.getenv("HEALTHCHECK_URL", ""), disabled=disabled)
             with col_s2:
-                new_portainer_token = st.text_input("Portainer Token", value=os.getenv("PORTAINER_TOKEN", ""), type="password", disabled=disabled)
-                new_gotify_token = st.text_input("Gotify Token", value=os.getenv("GOTIFY_TOKEN", ""), type="password", disabled=disabled)
+                # Decrypt values for display
+                p_token_display = decrypt_value(os.getenv("PORTAINER_TOKEN", ""))
+                g_token_display = decrypt_value(os.getenv("GOTIFY_TOKEN", ""))
+                
+                new_portainer_token = st.text_input("Portainer Token", value=p_token_display, type="password", disabled=disabled)
+                new_gotify_token = st.text_input("Gotify Token", value=g_token_display, type="password", disabled=disabled)
                 new_retention = st.number_input("Retention (Days)", value=int(os.getenv("RETENTION_DAYS", "7")), min_value=1, disabled=disabled)
                 new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
             
@@ -447,14 +539,19 @@ def run():
     # Force reload env to get the latest values
     load_dotenv(dotenv_path=get_env_path(), override=True)
     
-    # Start Scheduler in Background (Singleton)
-    start_scheduler()
-    
     # Check if critical configuration exists
     backup_password = os.getenv("BACKUP_PASSWORD")
     
     # If password is missing or empty, show setup
     if not backup_password:
         show_setup_wizard()
-    else:
-        show_dashboard()
+        return
+
+    # Check Authentication
+    if not check_password():
+        st.stop()  # Stop execution if not logged in
+
+    # Start Scheduler in Background (Singleton)
+    start_scheduler()
+    
+    show_dashboard()

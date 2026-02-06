@@ -4,6 +4,7 @@ import os
 import logging
 import urllib3
 from dotenv import load_dotenv
+from app.security import decrypt_value
 
 # Suppress InsecureRequestWarning for local self-signed certs
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -19,9 +20,9 @@ class APIHandler:
         load_dotenv(dotenv_path=env_path)
         
         self.portainer_url = os.getenv("PORTAINER_URL")
-        self.portainer_token = os.getenv("PORTAINER_TOKEN")
+        self.portainer_token = decrypt_value(os.getenv("PORTAINER_TOKEN"))
         self.gotify_url = os.getenv("GOTIFY_URL")
-        self.gotify_token = os.getenv("GOTIFY_TOKEN")
+        self.gotify_token = decrypt_value(os.getenv("GOTIFY_TOKEN"))
         self.healthcheck_url = os.getenv("HEALTHCHECK_URL")
 
     def send_gotify_notification(self, title, message, priority=5):

@@ -10,6 +10,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from app.api_handlers import APIHandler
 from app.languages import get_text
+from app.security import decrypt_value
 
 class BackupEngine:
     def __init__(self):
@@ -29,7 +30,9 @@ class BackupEngine:
         self.rclone_config = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
         self.rclone_remote_name = os.getenv("RCLONE_REMOTE_NAME", "remote")
         self.rclone_destination = os.getenv("RCLONE_DESTINATION", "backups")
-        self.backup_password = os.getenv("BACKUP_PASSWORD")
+        
+        # Decrypt sensitive fields
+        self.backup_password = decrypt_value(os.getenv("BACKUP_PASSWORD"))
         self.healthcheck_url = os.getenv("HEALTHCHECK_URL")
 
         # Setup Logging
