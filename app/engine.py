@@ -156,6 +156,80 @@ class BackupEngine:
             self._log(f"Exception during Rclone operation: {e}", "ERROR")
             return False
 
+    def perform_portainer_backup(self):
+        """
+        Executes a standalone backup for Portainer Configuration via API.
+        Downloads tar.gz, encrypts to 7z, and uploads via Rclone.
+        """
+        if not self.backup_password:
+            self._log("ERROR: BACKUP_PASSWORD is not set!", "ERROR")
+            return False
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        temp_dir = os.path.join(self.backup_root, f"temp_portainer_{timestamp}")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        try:
+            api = APIHandler()
+            if not (api.portainer_url and api.portainer_token):
+                self._log("Portainer credentials missing or incomplete.", "ERROR")
+                return False
+
+            self._log("Starting Standalone Portainer Backup...")
+            
+            # 1. Download Backup
+            backup_name = f"portainer_backup_{timestamp}.tar.gz"
+            backup_path = os.path.join(temp_dir, backup_name)
+            
+            if not api.download_portainer_backup(backup_path, password=self.backup_password):
+                self._log("Failed to download Portainer backup.", "ERROR")
+                return False
+                
+            # 2. Compress & Encrypt (7z)
+            master_archive_name = f"Portainer_Backup_{timestamp}.7z"
+            master_archive_path = os.path.join(self.backup_root, master_archive_name)
+            
+            self._log(f"Compressing and Encrypting to {master_archive_name}...")
+            
+            # Using 7z to wrap the tar.gz into an encrypted 7z archive
+            cmd = [
+                "7z", "a", "-t7z",
+                "-mx=3", "-mhe=on",
+                f"-p{self.backup_password}",
+                master_archive_path,
+                backup_path 
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                self._log(f"Compression Error: {result.stderr}", "ERROR")
+                return False
+            
+            # 3. Upload via Rclone
+            success = self._rclone_sync(master_archive_path)
+            
+            if success:
+                self._log(f"Portainer Backup successful and uploaded: {master_archive_name}")
+                # Cleanup local archive
+                try:
+                    os.remove(master_archive_path)
+                except:
+                    pass
+                return True
+            else:
+                self._log("Portainer Backup upload failed.", "ERROR")
+                return False
+
+        except Exception as e:
+            self._log(f"Exception during Portainer Backup: {e}", "ERROR")
+            return False
+            
+        finally:
+            # Cleanup temp dir
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+
     def perform_backup(self, container_id=None):
         """
         Executes the 'Single File Strategy' backup process using Snapshot logic.

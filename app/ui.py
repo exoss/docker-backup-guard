@@ -365,6 +365,27 @@ def show_dashboard():
 
     # --- TAB 3: ACTION CENTER ---
     with tab_actions:
+        # Portainer Backup Section
+        st.subheader(get_text(lang, "subheader_portainer_backup"))
+        
+        col_p1, col_p2 = st.columns([1, 2])
+        with col_p1:
+            if st.button(get_text(lang, "btn_backup_portainer"), type="secondary"):
+                with st.status(get_text(lang, "status_backup_portainer_start"), expanded=True) as status:
+                    if not os.getenv("BACKUP_PASSWORD"):
+                         st.error(get_text(lang, "error_no_pass"))
+                         status.update(label=get_text(lang, "status_failed"), state="error")
+                    else:
+                        success = backup_engine.perform_portainer_backup()
+                        if success:
+                            st.success(get_text(lang, "status_backup_portainer_success"))
+                            status.update(label=get_text(lang, "status_backup_portainer_success"), state="complete")
+                        else:
+                            st.error(get_text(lang, "status_backup_portainer_failed"))
+                            status.update(label=get_text(lang, "status_backup_portainer_failed"), state="error")
+        
+        st.markdown("---")
+
         candidates = backup_engine.get_backup_candidates()
         st.subheader(f"{get_text(lang, 'subheader_candidates')} ({len(candidates)})")
         

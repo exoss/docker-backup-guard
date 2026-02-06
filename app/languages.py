@@ -98,7 +98,14 @@ TRANSLATIONS = {
         "toggle_edit": "Unlock / Edit Settings",
         "header_logs": "System Logs",
         "btn_refresh_logs": "Refresh Logs",
-        "btn_save_changes": "Save Changes"
+        "btn_save_changes": "Save Changes",
+        
+        # Portainer Backup
+        "subheader_portainer_backup": "Portainer Configuration Backup",
+        "btn_backup_portainer": "📦 Backup Portainer Config Only",
+        "status_backup_portainer_start": "Backing up Portainer Configuration...",
+        "status_backup_portainer_success": "✅ Portainer Configuration Backup Successful!",
+        "status_backup_portainer_failed": "❌ Portainer Backup Failed!"
     },
     
     "tr": {
@@ -199,7 +206,14 @@ TRANSLATIONS = {
         "toggle_edit": "Kilit Aç / Düzenle",
         "header_logs": "Sistem Logları",
         "btn_refresh_logs": "Logları Yenile",
-        "btn_save_changes": "Değişiklikleri Kaydet"
+        "btn_save_changes": "Değişiklikleri Kaydet",
+        
+        # Portainer Backup
+        "subheader_portainer_backup": "Portainer Konfigürasyon Yedekleme",
+        "btn_backup_portainer": "📦 Sadece Portainer Konfigürasyonunu Yedekle",
+        "status_backup_portainer_start": "Portainer Konfigürasyonu Yedekleniyor...",
+        "status_backup_portainer_success": "✅ Portainer Konfigürasyonu Başarıyla Yedeklendi!",
+        "status_backup_portainer_failed": "❌ Portainer Yedeklemesi Başarısız!"
     },
     
     "de": {
@@ -300,7 +314,14 @@ TRANSLATIONS = {
         "toggle_edit": "Entsperren / Bearbeiten",
         "header_logs": "Systemprotokolle",
         "btn_refresh_logs": "Protokolle aktualisieren",
-        "btn_save_changes": "Änderungen speichern"
+        "btn_save_changes": "Änderungen speichern",
+        
+        # Portainer Backup
+        "subheader_portainer_backup": "Portainer Konfigurationssicherung",
+        "btn_backup_portainer": "📦 Nur Portainer-Konfiguration sichern",
+        "status_backup_portainer_start": "Sichere Portainer-Konfiguration...",
+        "status_backup_portainer_success": "✅ Portainer-Konfigurationssicherung erfolgreich!",
+        "status_backup_portainer_failed": "❌ Portainer-Sicherung fehlgeschlagen!"
     }
 }
 
