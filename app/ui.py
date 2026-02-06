@@ -320,8 +320,25 @@ def show_dashboard():
 
     st.title(get_text(lang, "header_dashboard"))
     
-    # Initialize Engine
-    backup_engine = engine.BackupEngine()
+    # Initialize Engine (Cached)
+    @st.cache_resource
+    def get_backup_engine():
+        return engine.BackupEngine()
+        
+    backup_engine = get_backup_engine()
+
+    # Cache candidates with TTL (60 seconds)
+    @st.cache_data(ttl=60)
+    def get_cached_candidates():
+        # We need to access the underlying engine method
+        # But st.cache_data requires serializable output.
+        # Docker container objects might not be fully serializable or safe to cache directly 
+        # because they hold client references.
+        # Better approach: Cache the list of dicts with necessary info, 
+        # OR just cache the function result if we trust pickle.
+        # Docker container objects are complex. Let's try caching the result of get_backup_candidates directly first.
+        # If that fails, we might need a wrapper to return simple dicts.
+        return backup_engine.get_backup_candidates()
 
     # Create Tabs
     tab_dash, tab_settings, tab_actions, tab_logs = st.tabs([
@@ -557,9 +574,13 @@ def show_dashboard():
         
         st.markdown("---")
 
-        candidates = backup_engine.get_backup_candidates()
+        candidates = get_cached_candidates()
         st.subheader(f"{get_text(lang, 'subheader_candidates')} ({len(candidates)})")
         
+        if st.button("🔄 Refresh List"):
+            get_cached_candidates.clear()
+            st.rerun()
+
         if not candidates:
             st.warning(get_text(lang, "warning_no_candidates"))
         else:

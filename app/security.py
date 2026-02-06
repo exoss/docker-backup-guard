@@ -1,9 +1,11 @@
 import os
+from functools import lru_cache
 from cryptography.fernet import Fernet
 
 # Store key in a persistent location (e.g., mapped volume)
 KEY_FILE = "/backups/secret.key" 
 
+@lru_cache(maxsize=1)
 def _get_key():
     """Loads or creates the encryption key."""
     if os.path.exists(KEY_FILE):
