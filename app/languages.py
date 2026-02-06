@@ -132,7 +132,14 @@ TRANSLATIONS = {
         "header_login": "🔐 Admin Login",
         "label_web_ui_username": "Web UI Username",
         "label_web_ui_password": "Web UI Password",
-        "help_web_ui_creds": "Credentials to access this dashboard."
+        "help_web_ui_creds": "Credentials to access this dashboard.",
+        
+        # Rclone Editor
+        "subheader_rclone_editor": "📝 Rclone Config Editor",
+        "btn_save_rclone": "💾 Save Rclone Config",
+        "status_rclone_saved": "✅ Rclone config saved successfully!",
+        "error_rclone_save": "❌ Error saving rclone config: {error}",
+        "warning_ro_mount": "⚠️ Warning: File is Read-Only. Please remove ':ro' from docker-compose.yml"
     },
     
     "tr": {
@@ -267,7 +274,14 @@ TRANSLATIONS = {
         "header_login": "🔐 Yönetici Girişi",
         "label_web_ui_username": "Web Arayüz Kullanıcı Adı",
         "label_web_ui_password": "Web Arayüz Şifresi",
-        "help_web_ui_creds": "Bu panele erişim için kullanılacak kimlik bilgileri."
+        "help_web_ui_creds": "Bu panele erişim için kullanılacak kimlik bilgileri.",
+
+        # Rclone Editor
+        "subheader_rclone_editor": "📝 Rclone Konfigürasyon Editörü",
+        "btn_save_rclone": "💾 Rclone Ayarlarını Kaydet",
+        "status_rclone_saved": "✅ Rclone ayarları başarıyla kaydedildi!",
+        "error_rclone_save": "❌ Rclone ayarları kaydedilirken hata: {error}",
+        "warning_ro_mount": "⚠️ Uyarı: Dosya Salt Okunur. Lütfen docker-compose.yml dosyasından ':ro' ibaresini kaldırın."
     },
 
     "de": {
@@ -402,7 +416,14 @@ TRANSLATIONS = {
         "header_login": "🔐 Admin-Login",
         "label_web_ui_username": "Web-UI Benutzername",
         "label_web_ui_password": "Web-UI Passwort",
-        "help_web_ui_creds": "Anmeldeinformationen für dieses Dashboard."
+        "help_web_ui_creds": "Anmeldeinformationen für dieses Dashboard.",
+
+        # Rclone Editor
+        "subheader_rclone_editor": "📝 Rclone Konfigurations-Editor",
+        "btn_save_rclone": "💾 Rclone-Konfiguration speichern",
+        "status_rclone_saved": "✅ Rclone-Konfiguration erfolgreich gespeichert!",
+        "error_rclone_save": "❌ Fehler beim Speichern: {error}",
+        "warning_ro_mount": "⚠️ Warnung: Datei ist schreibgeschützt. Bitte entfernen Sie ':ro' aus docker-compose.yml"
     }
 }
 

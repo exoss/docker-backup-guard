@@ -434,6 +434,48 @@ def show_dashboard():
                 new_web_ui_password = st.text_input(get_text(lang, "label_web_ui_password"), value=web_pass_display, type="password", disabled=disabled)
 
             st.markdown("---")
+            st.subheader(get_text(lang, "subheader_rclone_editor"))
+            
+            rclone_path = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
+            
+            # Logic to handle if rclone_path is a directory (common Docker mistake)
+            rclone_content = ""
+            if os.path.exists(rclone_path):
+                if os.path.isfile(rclone_path):
+                    try:
+                        with open(rclone_path, "r") as f:
+                            rclone_content = f.read()
+                    except Exception as e:
+                        st.error(f"Error reading rclone.conf: {e}")
+                elif os.path.isdir(rclone_path):
+                     st.warning(f"⚠️ Path {rclone_path} is a directory. Checking for rclone.conf inside...")
+                     possible_sub = os.path.join(rclone_path, "rclone.conf")
+                     if os.path.exists(possible_sub):
+                         rclone_path = possible_sub
+                         try:
+                             with open(rclone_path, "r") as f:
+                                 rclone_content = f.read()
+                         except Exception as e:
+                             st.error(f"Error reading sub-file: {e}")
+            else:
+                st.info("rclone.conf not found. You can create it here.")
+            
+            new_rclone_content = st.text_area("rclone.conf Content", value=rclone_content, height=200, disabled=disabled, help=get_text(lang, "help_rclone_content_hint"))
+            
+            if st.button(get_text(lang, "btn_save_rclone"), disabled=disabled):
+                try:
+                    with open(rclone_path, "w") as f:
+                        f.write(new_rclone_content)
+                    st.success(get_text(lang, "status_rclone_saved"))
+                except OSError as e:
+                    if "Read-only file system" in str(e) or e.errno == 30:
+                         st.error(get_text(lang, "warning_ro_mount"))
+                    else:
+                         st.error(get_text(lang, "error_rclone_save").format(error=e))
+                except Exception as e:
+                    st.error(get_text(lang, "error_rclone_save").format(error=e))
+
+            st.markdown("---")
             col_b1, col_b2 = st.columns([1, 1])
             with col_b1:
                 test_conn = st.form_submit_button(get_text(lang, "btn_test_connection"), disabled=disabled)
