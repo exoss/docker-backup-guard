@@ -85,10 +85,14 @@ def check_password():
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if st.session_state["username"] == env_user and st.session_state["password"] == env_pass:
+        user = st.session_state.get("username", "")
+        password = st.session_state.get("password", "")
+        
+        if user == env_user and password == env_pass:
             st.session_state["password_correct"] = True
-            del st.session_state["password"]  # don't store password
-            del st.session_state["username"]
+            # Safe delete
+            if "password" in st.session_state: del st.session_state["password"]
+            if "username" in st.session_state: del st.session_state["username"]
         else:
             st.session_state["password_correct"] = False
 
