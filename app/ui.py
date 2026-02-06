@@ -251,6 +251,35 @@ def show_dashboard():
             with st.expander(f"📦 {container.name} ({container.short_id})"):
                 st.write(f"**{get_text(lang, 'label_status')}:** {container.status}")
                 st.write(f"**{get_text(lang, 'label_image')}:** {container.image.tags}")
+                
+                # Single Backup Button
+                if st.button(get_text(lang, "btn_backup").format(name=container.name), key=f"btn_{container.id}"):
+                    with st.status(get_text(lang, "status_backing_up").format(name=container.name), expanded=True) as status:
+                        backup_pass = os.getenv("BACKUP_PASSWORD")
+                        if not backup_pass:
+                             st.error(get_text(lang, "error_no_pass"))
+                             status.update(label=get_text(lang, "status_failed"), state="error")
+                        else:
+                            # Pass container_id to perform_backup
+                            success = backup_engine.perform_backup(container_id=container.id)
+                            
+                            if success:
+                                st.write(get_text(lang, "status_complete"))
+                                api = api_handlers.APIHandler()
+                                api.send_gotify_notification(
+                                    get_text(lang, "notif_success_title"), 
+                                    get_text(lang, "notif_success_msg").format(name=container.name)
+                                )
+                                status.update(label=get_text(lang, "status_complete"), state="complete")
+                            else:
+                                st.write(get_text(lang, "status_error_process"))
+                                api = api_handlers.APIHandler()
+                                api.send_gotify_notification(
+                                    get_text(lang, "notif_error_title"), 
+                                    get_text(lang, "notif_error_msg").format(name=container.name),
+                                    priority=8
+                                )
+                                status.update(label=get_text(lang, "status_error_label"), state="error")
 
     st.markdown("---")
     # Show settings

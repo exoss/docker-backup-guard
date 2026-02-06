@@ -103,10 +103,11 @@ class BackupEngine:
 
     def perform_backup(self, container_id=None):
         """
-        Executes the 'Single File Strategy' backup process.
-        If container_id is provided, only that container is backed up.
-        Iterates over all candidate containers, compresses their volumes into a temp folder,
-        then creates a master archive and uploads it.
+        Executes the 'Single File Strategy' backup process using Snapshot logic.
+        Refactored to match 'ornek.sh' performance:
+        1. Snapshot Phase: Stop -> Copy (cp -rp) -> Start for each container (Fast, Minimal Downtime).
+        2. Compression Phase: Compress the entire snapshot folder with gentle settings (-mx=3 -mmt=2) to prevent freezing.
+        3. Upload & Cleanup.
         """
         if not self.backup_password:
             self._log("ERROR: BACKUP_PASSWORD is not set!", "ERROR")
@@ -129,7 +130,7 @@ class BackupEngine:
 
         self._log(f"Starting Backup for {len(candidates)} containers...")
 
-        # Step 2: Container Loop
+        # Step 2: Snapshot Phase (Stop -> Copy -> Start)
         for container in candidates:
             try:
                 container_name = container.name
@@ -140,29 +141,32 @@ class BackupEngine:
                     self._log(f"No volumes found for {container_name}, skipping.", "WARNING")
                     continue
 
+                # Prepare container-specific staging dir
+                container_stage_dir = os.path.join(temp_dir, container_name)
+                os.makedirs(container_stage_dir, exist_ok=True)
+
                 # Stop Container
                 self._log(f"Stopping {container_name}...")
                 container.stop()
                 
                 try:
-                    # 7-Zip Command
-                    # 7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on -mhe=on -p{PASS} {target} {sources}
-                    target_7z = os.path.join(temp_dir, f"{container_name}.7z")
-                    
-                    cmd = [
-                        "7z", "a", "-t7z",
-                        "-m0=lzma2", "-mx=9", "-mfb=64", "-md=32m", "-ms=on",
-                        "-mhe=on", f"-p{self.backup_password}",
-                        target_7z
-                    ] + source_paths
-                    
-                    self._log(f"Compressing volumes for {container_name}...")
-                    result = subprocess.run(cmd, capture_output=True, text=True)
-                    
-                    if result.returncode != 0:
-                        self._log(f"7-Zip Error for {container_name}: {result.stderr}", "ERROR")
-                    else:
-                        self._log(f"Successfully compressed {container_name}")
+                    # Copy Volumes (Fast I/O copy)
+                    for i, src in enumerate(source_paths):
+                        # Destination: temp_dir/container_name/vol_X_basename
+                        # We use index to avoid name collisions if multiple volumes have same basename
+                        basename = os.path.basename(src.rstrip("/"))
+                        dest = os.path.join(container_stage_dir, f"{i}_{basename}")
+                        
+                        # Use subprocess cp -rp for preservation and speed
+                        # cp -rp /hostfs/path /backups/temp_.../container/0_data
+                        cmd_cp = ["cp", "-rp", src, dest]
+                        self._log(f"Snapshotting {src} -> {dest}")
+                        subprocess.run(cmd_cp, check=True)
+                        
+                except subprocess.CalledProcessError as e:
+                    self._log(f"Snapshot Error for {container_name}: {e}", "ERROR")
+                except Exception as e:
+                    self._log(f"Error creating snapshot for {container_name}: {e}", "ERROR")
                         
                 finally:
                     # Start Container immediately
@@ -172,22 +176,29 @@ class BackupEngine:
             except Exception as e:
                 self._log(f"Error processing container {container.name}: {e}", "ERROR")
 
-        # Step 3: Master Archiving
+        # Step 3: Compression Phase (Heavy Lifting)
+        # Services are UP, now we compress the staging folder
         try:
             master_archive_name = f"Backup_{timestamp}.7z"
             master_archive_path = os.path.join(self.backup_root, master_archive_name)
             
-            # Check if temp dir has files
+            # Check if temp dir has content
             if not os.listdir(temp_dir):
-                self._log("No backups were created in temp directory. Aborting master archive.", "ERROR")
+                self._log("No data found in staging directory. Aborting backup.", "ERROR")
                 shutil.rmtree(temp_dir)
                 return False
 
-            self._log("Creating Master Archive (Store Mode)...")
-            # 7z a -mx=0 {master} .
-            # Note: We execute this inside temp_dir to include all files without absolute paths
+            self._log("Compressing Backup Archive (Gentle Mode: -mx=3)...")
+            
+            # 7-Zip Command aligned with ornek.sh for Raspberry Pi stability
+            # -mx=3: Fast compression (low CPU/RAM)
+            # -mmt=2: Limit to 2 threads to prevent freeze
+            # -mhe=on: Encrypt filenames
             cmd_master = [
-                "7z", "a", "-mx=0",
+                "7z", "a", "-t7z",
+                "-mx=3", "-mmt=2",
+                "-mhe=on",
+                f"-p{self.backup_password}",
                 master_archive_path,
                 "."
             ]
@@ -195,28 +206,28 @@ class BackupEngine:
             result_master = subprocess.run(cmd_master, cwd=temp_dir, capture_output=True, text=True)
             
             if result_master.returncode != 0:
-                self._log(f"Master Archive Error: {result_master.stderr}", "ERROR")
+                self._log(f"Compression Error: {result_master.stderr}", "ERROR")
                 return False
             
-            self._log(f"Master Archive created: {master_archive_path}")
+            self._log(f"Backup Archive created: {master_archive_path}")
             
             # Step 4: Cloud Sync
             success = self._rclone_sync(master_archive_path)
             
             if success:
                 # Immediate cleanup for successful upload (Upload & Delete)
-                self._log(f"Cloud sync successful. Deleting local master archive: {master_archive_name}")
+                self._log(f"Cloud sync successful. Deleting local archive: {master_archive_name}")
                 try:
                     os.remove(master_archive_path)
                 except OSError as e:
-                    self._log(f"Error deleting local master archive: {e}", "WARNING")
+                    self._log(f"Error deleting local archive: {e}", "WARNING")
             
             return success
 
         finally:
-            # Step 5: Cleanup
+            # Step 5: Cleanup Staging
             if os.path.exists(temp_dir):
-                self._log("Cleaning up temp directory...")
+                self._log("Cleaning up staging directory...")
                 shutil.rmtree(temp_dir)
             
             retention_days = int(os.getenv("RETENTION_DAYS", "7"))
