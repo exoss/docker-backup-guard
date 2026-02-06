@@ -93,6 +93,7 @@ def check_password():
             # Safe delete
             if "password" in st.session_state: del st.session_state["password"]
             if "username" in st.session_state: del st.session_state["username"]
+            st.rerun()
         else:
             st.session_state["password_correct"] = False
 
