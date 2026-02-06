@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  rdocker-backup-guard:
+  docker-backup-guard:
     build: .
     container_name: docker-backup-guard
     restart: unless-stopped

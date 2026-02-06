@@ -2,10 +2,10 @@
 TRANSLATIONS = {
     "en": {
         # Titles
-        "page_title_setup": "Restore Container - Setup",
+        "page_title_setup": "Docker Backup Guard - Setup",
         "header_setup": "🛠️ Initial Setup Wizard",
-        "page_title_dashboard": "Restore Container",
-        "header_dashboard": "📦 Restore Container Dashboard",
+        "page_title_dashboard": "Docker Backup Guard",
+        "header_dashboard": "📦 Docker Backup Guard Dashboard",
         
         # Setup Wizard
         "warning_env_missing": "⚠️ Configuration file (`.env`) not found. Please configure the settings below before using the system.",
@@ -126,10 +126,10 @@ TRANSLATIONS = {
     
     "tr": {
         # Titles
-        "page_title_setup": "Restore Container - Kurulum",
+        "page_title_setup": "Docker Backup Guard - Kurulum",
         "header_setup": "🛠️ İlk Kurulum Sihirbazı",
-        "page_title_dashboard": "Restore Container",
-        "header_dashboard": "📦 Restore Container Paneli",
+        "page_title_dashboard": "Docker Backup Guard",
+        "header_dashboard": "📦 Docker Backup Guard Paneli",
         
         # Setup Wizard
         "warning_env_missing": "⚠️ Konfigürasyon dosyası (`.env`) bulunamadı. Lütfen sistemi kullanmaya başlamadan önce aşağıdaki ayarları yapılandırın.",
@@ -250,10 +250,10 @@ TRANSLATIONS = {
     
     "de": {
         # Titles
-        "page_title_setup": "Restore Container - Einrichtung",
+        "page_title_setup": "Docker Backup Guard - Einrichtung",
         "header_setup": "🛠️ Ersteinrichtungs-Assistent",
-        "page_title_dashboard": "Restore Container",
-        "header_dashboard": "📦 Restore Container Dashboard",
+        "page_title_dashboard": "Docker Backup Guard",
+        "header_dashboard": "📦 Docker Backup Guard Dashboard",
         
         # Setup Wizard
         "warning_env_missing": "⚠️ Konfigurationsdatei (`.env`) nicht gefunden. Bitte konfigurieren Sie die Einstellungen unten, bevor Sie das System verwenden.",

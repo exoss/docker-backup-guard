@@ -48,7 +48,7 @@ def show_setup_wizard():
     # Mapping for display names
     lang_options = {"English": "en", "Türkçe": "tr", "Deutsch": "de"}
     
-    st.set_page_config(page_title="Restore Container - Setup", page_icon="⚙️", layout="centered")
+    st.set_page_config(page_title="Docker Backup Guard - Setup", page_icon="⚙️", layout="centered")
     
     # Language Selector at the top
     selected_lang_name = st.selectbox(

@@ -1,4 +1,4 @@
-# Restore Container
+# Docker Backup Guard
 
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
@@ -6,7 +6,7 @@
 ![Rclone](https://img.shields.io/badge/Rclone-333333?style=for-the-badge&logo=rclone&logoColor=white)
 ![7-Zip](https://img.shields.io/badge/7--Zip-0096D6?style=for-the-badge&logo=7-zip&logoColor=white)
 
-**Restore Container** is a lightweight, secure, and user-friendly backup solution designed for Docker environments. Optimized for **Raspberry Pi (ARM64)** and generic Linux servers (AMD64), it uses a powerful **7-Zip** based engine to provide high-ratio compression and AES-256 encryption.
+**Docker Backup Guard** is a lightweight, secure, and user-friendly backup solution designed for Docker environments. Optimized for **Raspberry Pi (ARM64)** and generic Linux servers (AMD64), it uses a powerful **7-Zip** based engine to provide high-ratio compression and AES-256 encryption.
 
 It implements a **"Single File Strategy"** to keep your cloud storage organized and uses **"Atomic Snapshots"** to minimize container downtime.
 
@@ -48,10 +48,10 @@ If you are running this on a headless server or Raspberry Pi, the easiest way to
     Once finished, your config file is typically saved at:
     `C:\Users\YOUR_USERNAME\AppData\Roaming\rclone\rclone.conf`
 
-4.  **Import to Restore Container:**
+4.  **Import to Docker Backup Guard:**
     *   Open the file with Notepad.
     *   Copy the entire content.
-    *   Paste it into the **"Rclone Configuration Content"** box in the Restore Container Setup Wizard.
+    *   Paste it into the **"Rclone Configuration Content"** box in the Docker Backup Guard Setup Wizard.
     *   Save your settings!
 
 ### Quick Start (Docker Compose)
@@ -74,7 +74,7 @@ If you are running this on a headless server or Raspberry Pi, the easiest way to
 
 1.  Log in to Portainer and go to **Stacks**.
 2.  Click **Add stack**.
-3.  Name it `restore-container`.
+3.  Name it `docker-backup-guard`.
 4.  Paste the contents of `docker-compose.yml` into the Web Editor.
 5.  **Important:** Since Portainer might not have access to local relative paths easily, use absolute paths for volumes.
 
