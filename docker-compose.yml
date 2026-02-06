@@ -1,6 +1,35 @@
 version: '3.8'
 
 services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - CONTAINERS=1
+      - POST=1
+      # Explicitly deny potentially dangerous capabilities
+      - BUILD=0
+      - COMMIT=0
+      - CONFIGS=0
+      - DISTRIBUTION=0
+      - EXEC=0
+      - IMAGES=0
+      - NETWORKS=0
+      - NODES=0
+      - PLUGINS=0
+      - SERVICES=0
+      - SESSION=0
+      - SWARM=0
+      - SYSTEM=0
+      - TASKS=0
+      - VOLUMES=0
+      - SECRETS=0
+    networks:
+      - backup-net
+
   docker-backup-guard:
     build: .
     container_name: docker-backup-guard
@@ -9,9 +38,9 @@ services:
       - "8501:8501"
     environment:
       - TZ=Europe/Berlin
+      - DOCKER_HOST=tcp://socket-proxy:2375
     volumes:
-      # Docker Socket (Required to manage containers)
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Removed direct Docker Socket mount
       # Persistence for configuration file
       - ./.env:/app/.env
       # Backup storage (Mapped to ./backups on host)
@@ -22,3 +51,11 @@ services:
       - /var/lib/docker/volumes:/var/lib/docker/volumes:ro
       # Access to Host Filesystem for Bind Mounts
       - /:/hostfs:ro
+    depends_on:
+      - socket-proxy
+    networks:
+      - backup-net
+
+networks:
+  backup-net:
+    driver: bridge

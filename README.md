@@ -22,6 +22,8 @@ It implements a **"Single File Strategy"** to keep your cloud storage organized 
 *   **Upload & Delete:** Automatically deletes the local master archive after a successful cloud upload to save SD card space on Raspberry Pi.
 *   **Multi-Language Support:** Fully localized UI in **English**, **Türkçe**, and **Deutsch**.
 *   **Notifications:** Real-time status updates via **Gotify**.
+*   **Healthcheck Integration:** Supports **Uptime Kuma** (or similar) heartbeat monitoring via HTTP ping on successful backup completion.
+*   **Security Hardened:** Uses a **Docker Socket Proxy** to prevent privileged access, ensuring the backup container cannot create or destroy other containers.
 
 ## 🛠️ Installation
 
@@ -29,6 +31,53 @@ It implements a **"Single File Strategy"** to keep your cloud storage organized 
 
 *   Docker & Docker Compose installed on your host.
 *   An Rclone configuration file (`rclone.conf`) ready.
+
+### 🔒 Security-First Deployment (Recommended)
+
+This project uses a "sidecar" proxy container to securely access the Docker Socket. This prevents the main application from having "Root" access to your Docker daemon.
+
+**docker-compose.yml example:**
+
+```yaml
+version: '3.8'
+
+services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - CONTAINERS=1 # Allow listing
+      - POST=1       # Allow start/stop
+    networks:
+      - backup-net
+
+  docker-backup-guard:
+    build: .
+    container_name: docker-backup-guard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - TZ=Europe/Berlin
+      - DOCKER_HOST=tcp://socket-proxy:2375
+    volumes:
+      - ./.env:/app/.env
+      - ./backups:/backups
+      - ./config/rclone/rclone.conf:/app/rclone.conf:ro
+      - /var/lib/docker/volumes:/var/lib/docker/volumes:ro
+      - /:/hostfs:ro
+    depends_on:
+      - socket-proxy
+    networks:
+      - backup-net
+
+networks:
+  backup-net:
+    driver: bridge
+```
 
 ### ☁️ Creating rclone.conf (Recommended for Windows Users)
 
@@ -103,6 +152,7 @@ labels:
 ### 2. Configure via Wizard
 On first launch, you will be greeted by the **Setup Wizard**. Here you can configure:
 *   **Portainer & Gotify** credentials.
+*   **Healthcheck URL** (e.g., Uptime Kuma push URL).
 *   **Backup Password** (Crucial for 7-Zip encryption!).
 *   **Retention Policy** (How many days to keep backups).
 *   **Rclone Remote Name** (Must match your `rclone.conf`).
@@ -111,10 +161,12 @@ On first launch, you will be greeted by the **Setup Wizard**. Here you can confi
 
 ### 3. Backup Process
 *   **Full Backup:** Triggers the backup process for ALL enabled containers.
-    1.  **Snapshot Phase:** For each container: Stop -> Fast Copy (`cp -rp`) -> Start.
-    2.  **Compression Phase:** The snapshot folder is compressed into a single `Backup_XXX.7z` file using gentle settings (`-mx=3 -mmt=2`) to prevent system freeze.
-    3.  **Upload Phase:** The master archive is synced to your defined Cloud Destination.
-    4.  **Cleanup Phase:** The local master archive is deleted immediately after upload to save space.
+    1.  **Smart Check Phase:** Checks container status. If `restarting` or `paused` (e.g., due to Watchtower updates), it waits and retries.
+    2.  **Snapshot Phase:** For each container: Stop (with retry logic) -> Fast Copy (`cp -rp`) -> Start (with retry logic).
+    3.  **Compression Phase:** The snapshot folder is compressed into a single `Backup_XXX.7z` file using gentle settings (`-mx=3 -mmt=2`) to prevent system freeze.
+    4.  **Upload Phase:** The master archive is synced to your defined Cloud Destination.
+    5.  **Healthcheck:** Pings your configured **Healthcheck URL** (Uptime Kuma) upon success.
+    6.  **Cleanup Phase:** The local master archive is deleted immediately after upload to save space.
 
 *   **Single Container Backup:** Triggers the same process but only for the selected container.
 
