@@ -167,4 +167,6 @@ If you don't have an `rclone.conf` yet:
 
 ---
 
-**License:** MIT
+## ⚖️ License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
