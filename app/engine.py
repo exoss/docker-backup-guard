@@ -1,4 +1,6 @@
 # This module contains the backup and restore logic.
+import json
+import logging
 import docker
 import os
 import time
@@ -28,11 +30,56 @@ class BackupEngine:
         self.rclone_destination = os.getenv("RCLONE_DESTINATION", "backups")
         self.backup_password = os.getenv("BACKUP_PASSWORD")
 
+        # Setup Logging
+        log_dir = "logs"
+        os.makedirs(log_dir, exist_ok=True)
+        
+        # Configure root logger if not already configured with a file handler
+        root_logger = logging.getLogger()
+        if not any(isinstance(h, logging.FileHandler) for h in root_logger.handlers):
+            fh = logging.FileHandler(os.path.join(log_dir, "app.log"))
+            fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+            root_logger.addHandler(fh)
+            # Ensure level is at least INFO
+            root_logger.setLevel(logging.INFO)
+            
+        self.logger = logging.getLogger("BackupEngine")
+
     def _log(self, message, level="INFO"):
-        """Simple logging function"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] [{level}] {message}")
-        # Gotify integration can be added here in the future
+        """Simple logging function wrapper around logging module"""
+        lvl = getattr(logging, level.upper(), logging.INFO)
+        self.logger.log(lvl, message)
+        # Also print to stdout if not handled by root logger (redundancy check, though root usually has StreamHandler)
+        # print(f"[{level}] {message}") 
+
+    def _update_state_file(self, status, size_bytes=0, protected_count=0):
+        """Updates the JSON state file with KPI data."""
+        state_path = os.path.join(self.backup_root, "backup_state.json")
+        data = {}
+        
+        # Read existing data to preserve history (e.g. last success)
+        if os.path.exists(state_path):
+            try:
+                with open(state_path, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                pass # Start fresh if corrupt
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        data["last_attempt"] = now
+        data["last_status"] = status
+        data["protected_containers"] = protected_count
+        
+        if status == "success":
+            data["last_success"] = now
+            data["last_size_bytes"] = size_bytes
+            
+        try:
+            with open(state_path, "w") as f:
+                json.dump(data, f, indent=4)
+        except Exception as e:
+            self._log(f"Failed to update state file: {e}", "WARNING")
 
     def _resolve_host_path(self, host_path):
         """
@@ -131,12 +178,13 @@ class BackupEngine:
         if container_id:
             candidates = [c for c in candidates if c.id == container_id or c.short_id == container_id]
             
-        if not candidates:
-            self._log("No containers found for backup.", "WARNING")
-            shutil.rmtree(temp_dir)
-            return False
+            if not candidates:
+                self._log("No containers found for backup.", "WARNING")
+                shutil.rmtree(temp_dir)
+                self._update_state_file("skipped", 0, 0)
+                return False
 
-        self._log(f"Starting Backup for {len(candidates)} containers...")
+            self._log(f"Starting Backup for {len(candidates)} containers...")
 
         # Step 1.5: Portainer API Backup (Standalone)
         # Attempt to backup Portainer via API using stored credentials, regardless of containers.
@@ -232,10 +280,15 @@ class BackupEngine:
             
             if result_master.returncode != 0:
                 self._log(f"Compression Error: {result_master.stderr}", "ERROR")
+                self._update_state_file("failed", 0, len(candidates))
                 return False
             
             self._log(f"Backup Archive created: {master_archive_path}")
             
+            # Update State File (Success)
+            archive_size = os.path.getsize(master_archive_path)
+            self._update_state_file("success", archive_size, len(candidates))
+
             # Step 4: Cloud Sync
             success = self._rclone_sync(master_archive_path)
             

@@ -2,6 +2,7 @@
 import streamlit as st
 import os
 import time
+import json
 import secrets
 import shutil
 import re
@@ -197,7 +198,7 @@ def show_setup_wizard():
                     st.rerun()
 
 def show_dashboard():
-    """Displays the main control panel."""
+    """Displays the main control panel with tabs."""
     # Load env to get language
     load_dotenv(dotenv_path=get_env_path(), override=True)
     lang = os.getenv("LANGUAGE", "en")
@@ -209,90 +210,160 @@ def show_dashboard():
     
     st.title(get_text(lang, "header_dashboard"))
     
-    # Start engine
+    # Initialize Engine
     backup_engine = engine.BackupEngine()
-    candidates = backup_engine.get_backup_candidates()
-    
-    st.subheader(f"{get_text(lang, 'subheader_candidates')} ({len(candidates)})")
-    
-    # Full Backup Button
-    if st.button(get_text(lang, "btn_full_backup"), type="primary", use_container_width=True):
-        with st.status(get_text(lang, "status_full_backup_start"), expanded=True) as status:
-            # Check password
-            backup_pass = os.getenv("BACKUP_PASSWORD")
-            if not backup_pass:
-                st.error(get_text(lang, "error_no_pass"))
-                status.update(label=get_text(lang, "status_failed"), state="error")
-            else:
-                success = backup_engine.perform_backup()
-                
-                if success:
-                    st.write(get_text(lang, "status_complete"))
-                    api = api_handlers.APIHandler()
-                    api.send_gotify_notification(
-                        get_text(lang, "notif_full_success_title"), 
-                        get_text(lang, "notif_full_success_msg")
-                    )
-                    status.update(label=get_text(lang, "status_complete"), state="complete")
-                else:
-                    st.write(get_text(lang, "status_error_process"))
-                    api = api_handlers.APIHandler()
-                    api.send_gotify_notification(
-                        get_text(lang, "notif_full_error_title"), 
-                        get_text(lang, "notif_full_error_msg"),
-                        priority=8
-                    )
-                    status.update(label=get_text(lang, "status_error_label"), state="error")
-    
-    if not candidates:
-        st.warning(get_text(lang, "warning_no_candidates"))
-    else:
-        for container in candidates:
-            with st.expander(f"📦 {container.name} ({container.short_id})"):
-                st.write(f"**{get_text(lang, 'label_status')}:** {container.status}")
-                st.write(f"**{get_text(lang, 'label_image')}:** {container.image.tags}")
-                
-                # Single Backup Button
-                if st.button(get_text(lang, "btn_backup").format(name=container.name), key=f"btn_{container.id}"):
-                    with st.status(get_text(lang, "status_backing_up").format(name=container.name), expanded=True) as status:
-                        backup_pass = os.getenv("BACKUP_PASSWORD")
-                        if not backup_pass:
-                             st.error(get_text(lang, "error_no_pass"))
-                             status.update(label=get_text(lang, "status_failed"), state="error")
-                        else:
-                            # Pass container_id to perform_backup
-                            success = backup_engine.perform_backup(container_id=container.id)
-                            
-                            if success:
-                                st.write(get_text(lang, "status_complete"))
-                                api = api_handlers.APIHandler()
-                                api.send_gotify_notification(
-                                    get_text(lang, "notif_success_title"), 
-                                    get_text(lang, "notif_success_msg").format(name=container.name)
-                                )
-                                status.update(label=get_text(lang, "status_complete"), state="complete")
-                            else:
-                                st.write(get_text(lang, "status_error_process"))
-                                api = api_handlers.APIHandler()
-                                api.send_gotify_notification(
-                                    get_text(lang, "notif_error_title"), 
-                                    get_text(lang, "notif_error_msg").format(name=container.name),
-                                    priority=8
-                                )
-                                status.update(label=get_text(lang, "status_error_label"), state="error")
 
-    st.markdown("---")
-    # Show settings
-    if st.checkbox(get_text(lang, "checkbox_show_settings")):
-        st.code(f"""
-        LANGUAGE={os.getenv('LANGUAGE')}
-        PORTAINER_URL={os.getenv('PORTAINER_URL')}
-        GOTIFY_URL={os.getenv('GOTIFY_URL')}
-        RETENTION_DAYS={os.getenv('RETENTION_DAYS')}
-        TZ={os.getenv('TZ')}
-        RCLONE_REMOTE_NAME={os.getenv('RCLONE_REMOTE_NAME')}
-        RCLONE_DESTINATION={os.getenv('RCLONE_DESTINATION')}
-        """, language="bash")
+    # Create Tabs
+    tab_dash, tab_settings, tab_actions, tab_logs = st.tabs([
+        "📊 " + get_text(lang, "tab_dashboard"), 
+        "⚙️ " + get_text(lang, "tab_settings"), 
+        "🚀 " + get_text(lang, "tab_actions"), 
+        "📜 " + get_text(lang, "tab_logs")
+    ])
+
+    # --- TAB 1: DASHBOARD ---
+    with tab_dash:
+        st.header(get_text(lang, "header_overview"))
+        
+        # Load State
+        state_path = "/backups/backup_state.json"
+        state = {}
+        if os.path.exists(state_path):
+            try:
+                with open(state_path, "r") as f:
+                    state = json.load(f)
+            except:
+                pass
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(get_text(lang, "metric_last_success"), state.get("last_success", "Never"))
+        with col2:
+            size_mb = state.get("last_size_bytes", 0) / (1024*1024)
+            st.metric(get_text(lang, "metric_last_size"), f"{size_mb:.2f} MB")
+        with col3:
+            st.metric(get_text(lang, "metric_protected"), state.get("protected_containers", 0))
+
+        st.markdown("---")
+        
+        # Quick Action: Full Backup
+        if st.button(get_text(lang, "btn_full_backup"), type="primary", use_container_width=True):
+            with st.status(get_text(lang, "status_full_backup_start"), expanded=True) as status:
+                if not os.getenv("BACKUP_PASSWORD"):
+                    st.error(get_text(lang, "error_no_pass"))
+                    status.update(label=get_text(lang, "status_failed"), state="error")
+                else:
+                    success = backup_engine.perform_backup()
+                    if success:
+                        st.success(get_text(lang, "status_complete"))
+                        api_handlers.APIHandler().send_gotify_notification(
+                            get_text(lang, "notif_full_success_title"), 
+                            get_text(lang, "notif_full_success_msg")
+                        )
+                        status.update(label=get_text(lang, "status_complete"), state="complete")
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        st.error(get_text(lang, "status_error_process"))
+                        api_handlers.APIHandler().send_gotify_notification(
+                            get_text(lang, "notif_full_error_title"), 
+                            get_text(lang, "notif_full_error_msg"), priority=8
+                        )
+                        status.update(label=get_text(lang, "status_error_label"), state="error")
+
+    # --- TAB 2: SETTINGS ---
+    with tab_settings:
+        st.header(get_text(lang, "header_config"))
+        
+        # Edit Mode Toggle
+        if 'settings_edit_mode' not in st.session_state:
+            st.session_state.settings_edit_mode = False
+            
+        def toggle_edit():
+            st.session_state.settings_edit_mode = not st.session_state.settings_edit_mode
+            
+        st.toggle(get_text(lang, "toggle_edit"), value=st.session_state.settings_edit_mode, on_change=toggle_edit)
+        
+        disabled = not st.session_state.settings_edit_mode
+        
+        with st.form("settings_editor"):
+            col_s1, col_s2 = st.columns(2)
+            with col_s1:
+                new_portainer_url = st.text_input("Portainer URL", value=os.getenv("PORTAINER_URL", ""), disabled=disabled)
+                new_gotify_url = st.text_input("Gotify URL", value=os.getenv("GOTIFY_URL", ""), disabled=disabled)
+                new_retention = st.number_input("Retention (Days)", value=int(os.getenv("RETENTION_DAYS", "7")), min_value=1, disabled=disabled)
+            with col_s2:
+                new_portainer_token = st.text_input("Portainer Token", value=os.getenv("PORTAINER_TOKEN", ""), type="password", disabled=disabled)
+                new_gotify_token = st.text_input("Gotify Token", value=os.getenv("GOTIFY_TOKEN", ""), type="password", disabled=disabled)
+                new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
+                
+            submitted = st.form_submit_button(get_text(lang, "btn_save_changes"), disabled=disabled)
+            
+            if submitted:
+                env_updates = {
+                    "PORTAINER_URL": new_portainer_url,
+                    "PORTAINER_TOKEN": new_portainer_token,
+                    "GOTIFY_URL": new_gotify_url,
+                    "GOTIFY_TOKEN": new_gotify_token,
+                    "RETENTION_DAYS": new_retention,
+                    "TZ": new_tz
+                }
+                if save_env(env_updates):
+                    st.success("Settings saved! Reloading...")
+                    st.session_state.settings_edit_mode = False
+                    time.sleep(1)
+                    st.rerun()
+
+    # --- TAB 3: ACTION CENTER ---
+    with tab_actions:
+        candidates = backup_engine.get_backup_candidates()
+        st.subheader(f"{get_text(lang, 'subheader_candidates')} ({len(candidates)})")
+        
+        if not candidates:
+            st.warning(get_text(lang, "warning_no_candidates"))
+        else:
+            for container in candidates:
+                with st.expander(f"📦 {container.name} ({container.short_id})"):
+                    st.write(f"**{get_text(lang, 'label_status')}:** {container.status}")
+                    st.write(f"**{get_text(lang, 'label_image')}:** {container.image.tags}")
+                    
+                    if st.button(get_text(lang, "btn_backup").format(name=container.name), key=f"btn_{container.id}"):
+                        with st.status(get_text(lang, "status_backing_up").format(name=container.name), expanded=True) as status:
+                            if not os.getenv("BACKUP_PASSWORD"):
+                                 st.error(get_text(lang, "error_no_pass"))
+                                 status.update(label=get_text(lang, "status_failed"), state="error")
+                            else:
+                                success = backup_engine.perform_backup(container_id=container.id)
+                                if success:
+                                    st.success(get_text(lang, "status_complete"))
+                                    api_handlers.APIHandler().send_gotify_notification(
+                                        get_text(lang, "notif_success_title"), 
+                                        get_text(lang, "notif_success_msg").format(name=container.name)
+                                    )
+                                    status.update(label=get_text(lang, "status_complete"), state="complete")
+                                else:
+                                    st.error(get_text(lang, "status_error_process"))
+                                    api_handlers.APIHandler().send_gotify_notification(
+                                        get_text(lang, "notif_error_title"), 
+                                        get_text(lang, "notif_error_msg").format(name=container.name), priority=8
+                                    )
+                                    status.update(label=get_text(lang, "status_error_label"), state="error")
+
+    # --- TAB 4: LOGS ---
+    with tab_logs:
+        st.header(get_text(lang, "header_logs"))
+        if st.button(get_text(lang, "btn_refresh_logs")):
+            st.rerun()
+            
+        log_path = "logs/app.log"
+        if os.path.exists(log_path):
+            with open(log_path, "r") as f:
+                # Read last 200 lines
+                lines = f.readlines()[-200:]
+                log_content = "".join(lines)
+            st.code(log_content, language="log")
+        else:
+            st.info("No logs found.")
 
 def run():
     # Force reload env to get the latest values

@@ -76,7 +76,22 @@ TRANSLATIONS = {
         
         # Settings View
         "checkbox_show_settings": "Show Settings (Masked)",
-        "lang_select_label": "Select Language / Dil Seçimi / Sprache wählen"
+        "lang_select_label": "Select Language / Dil Seçimi / Sprache wählen",
+        
+        # Tabs & New UI
+        "tab_dashboard": "Dashboard",
+        "tab_settings": "Settings",
+        "tab_actions": "Action Center",
+        "tab_logs": "Logs",
+        "header_overview": "System Overview",
+        "metric_last_success": "Last Successful Backup",
+        "metric_last_size": "Last Backup Size",
+        "metric_protected": "Protected Containers",
+        "header_config": "Configuration",
+        "toggle_edit": "Unlock / Edit Settings",
+        "header_logs": "System Logs",
+        "btn_refresh_logs": "Refresh Logs",
+        "btn_save_changes": "Save Changes"
     },
     
     "tr": {
@@ -155,7 +170,22 @@ TRANSLATIONS = {
         
         # Settings View
         "checkbox_show_settings": "Ayarları Göster (Maskelenmiş)",
-        "lang_select_label": "Dil Seçimi / Select Language / Sprache wählen"
+        "lang_select_label": "Dil Seçimi / Select Language / Sprache wählen",
+        
+        # Tabs & New UI
+        "tab_dashboard": "Kontrol Paneli",
+        "tab_settings": "Ayarlar",
+        "tab_actions": "İşlem Merkezi",
+        "tab_logs": "Log Kayıtları",
+        "header_overview": "Sisteme Genel Bakış",
+        "metric_last_success": "Son Başarılı Yedek",
+        "metric_last_size": "Son Yedek Boyutu",
+        "metric_protected": "Korunan Konteynerler",
+        "header_config": "Konfigürasyon",
+        "toggle_edit": "Kilit Aç / Düzenle",
+        "header_logs": "Sistem Logları",
+        "btn_refresh_logs": "Logları Yenile",
+        "btn_save_changes": "Değişiklikleri Kaydet"
     },
     
     "de": {
@@ -234,7 +264,22 @@ TRANSLATIONS = {
         
         # Settings View
         "checkbox_show_settings": "Einstellungen anzeigen (Maskiert)",
-        "lang_select_label": "Sprache wählen / Select Language / Dil Seçimi"
+        "lang_select_label": "Sprache wählen / Select Language / Dil Seçimi",
+        
+        # Tabs & New UI
+        "tab_dashboard": "Dashboard",
+        "tab_settings": "Einstellungen",
+        "tab_actions": "Aktionszentrum",
+        "tab_logs": "Protokolle",
+        "header_overview": "Systemübersicht",
+        "metric_last_success": "Letzte erfolgreiche Sicherung",
+        "metric_last_size": "Letzte Sicherungsgröße",
+        "metric_protected": "Geschützte Container",
+        "header_config": "Konfiguration",
+        "toggle_edit": "Entsperren / Bearbeiten",
+        "header_logs": "Systemprotokolle",
+        "btn_refresh_logs": "Protokolle aktualisieren",
+        "btn_save_changes": "Änderungen speichern"
     }
 }
 
