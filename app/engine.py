@@ -30,6 +30,7 @@ class BackupEngine:
         self.rclone_remote_name = os.getenv("RCLONE_REMOTE_NAME", "remote")
         self.rclone_destination = os.getenv("RCLONE_DESTINATION", "backups")
         self.backup_password = os.getenv("BACKUP_PASSWORD")
+        self.healthcheck_url = os.getenv("HEALTHCHECK_URL")
 
         # Setup Logging
         log_dir = "logs"
@@ -52,6 +53,22 @@ class BackupEngine:
         self.logger.log(lvl, message)
         # Also print to stdout if not handled by root logger (redundancy check, though root usually has StreamHandler)
         # print(f"[{level}] {message}") 
+
+    def _send_healthcheck(self):
+        """Sends a ping to the configured Healthcheck URL (e.g., Uptime Kuma)."""
+        if not self.healthcheck_url:
+            return
+
+        try:
+            self._log(f"Sending Healthcheck ping to {self.healthcheck_url}...")
+            # Uptime Kuma supports ?status=up&msg=OK&ping=... but simple GET is usually enough for Heartbeat
+            response = requests.get(self.healthcheck_url, timeout=10)
+            if response.status_code == 200:
+                self._log("Healthcheck ping successful.")
+            else:
+                self._log(f"Healthcheck ping returned status code: {response.status_code}", "WARNING")
+        except Exception as e:
+            self._log(f"Healthcheck ping failed: {e}", "WARNING")
 
     def _update_state_file(self, status, size_bytes=0, protected_count=0):
         """Updates the JSON state file with KPI data."""
@@ -269,10 +286,22 @@ class BackupEngine:
                 groups[container.name] = [container]
         return groups
 
+    def _retry_operation(self, func, retries=3, delay=5, *args, **kwargs):
+        """Retries a function call with delay."""
+        last_exception = None
+        for i in range(retries):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                self._log(f"Operation failed (Attempt {i+1}/{retries}): {e}. Retrying in {delay}s...", "WARNING")
+                time.sleep(delay)
+        raise last_exception
+
     def _process_group_backup(self, group_name, containers, backup_tree_root, progress_callback=None, lang="en"):
         """
         Stops all containers in the group, copies their volumes preserving structure, 
-        and restarts them immediately.
+        and restarts them immediately. Includes retry logic for robustness.
         """
         msg = get_text(lang, "progress_processing_group").format(group=group_name, count=len(containers))
         self._log(msg)
@@ -282,8 +311,20 @@ class BackupEngine:
         # 1. Collect Unique Volume Paths
         unique_paths = set()
         for container in containers:
-            paths = self.get_container_volumes(container)
-            unique_paths.update(paths)
+            try:
+                # Reload container to get latest status/mounts
+                container.reload()
+                # Check if container is in a transition state (restarting, paused)
+                if container.status in ['restarting', 'paused', 'dead']:
+                     self._log(f"Container {container.name} is in '{container.status}' state. Waiting 10s...", "WARNING")
+                     time.sleep(10)
+                     container.reload()
+                
+                paths = self.get_container_volumes(container)
+                unique_paths.update(paths)
+            except Exception as e:
+                 self._log(f"Error inspecting container {container.name}: {e}", "ERROR")
+                 continue
             
         if not unique_paths:
             self._log(f"No volumes found for group {group_name}.", "WARNING")
@@ -298,10 +339,13 @@ class BackupEngine:
                 
             for container in containers:
                 try:
-                    container.stop()
+                    # Use retry logic for stopping
+                    self._retry_operation(container.stop, retries=3, delay=5)
                     stopped_containers.append(container)
                 except Exception as e:
-                    self._log(f"Failed to stop {container.name}: {e}", "WARNING")
+                    self._log(f"Failed to stop {container.name} after retries: {e}", "WARNING")
+                    # If we can't stop it, should we proceed? 
+                    # For data safety, maybe yes (snapshot might be fuzzy), but better to warn.
 
             # 3. Copy Phase (Snapshot)
             for src in unique_paths:
@@ -353,9 +397,10 @@ class BackupEngine:
                 
             for container in stopped_containers:
                 try:
-                    container.start()
+                    # Use retry logic for starting
+                    self._retry_operation(container.start, retries=3, delay=5)
                 except Exception as e:
-                    self._log(f"Failed to start {container.name}: {e}", "ERROR")
+                    self._log(f"Failed to start {container.name} after retries: {e}", "ERROR")
 
     def perform_backup(self, container_id=None, progress_callback=None, lang="en"):
         """
@@ -461,6 +506,10 @@ class BackupEngine:
                 self._log(f"Cloud sync successful. Deleting local archive: {master_archive_name}")
                 if progress_callback:
                     progress_callback(get_text(lang, "progress_upload_success"))
+                
+                # Send Healthcheck Ping
+                self._send_healthcheck()
+                
                 try:
                     os.remove(master_archive_path)
                 except OSError as e:
