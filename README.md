@@ -4,44 +4,84 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
 ![Rclone](https://img.shields.io/badge/Rclone-333333?style=for-the-badge&logo=rclone&logoColor=white)
-![7-Zip](https://img.shields.io/badge/7--Zip-0096D6?style=for-the-badge&logo=7-zip&logoColor=white)
 
-**Docker Backup Guard** is a lightweight, secure, and user-friendly backup solution designed for Docker environments. Optimized for **Raspberry Pi (ARM64)** and generic Linux servers (AMD64), it uses a powerful **7-Zip** based engine to provide high-ratio compression and AES-256 encryption.
+**Docker Backup Guard** is a robust, user-friendly backup automation tool for Docker containers. It combines a modern web interface with powerful background workers to ensure your data is safe, encrypted, and synced to the cloud.
 
-It implements a **"Single File Strategy"** to keep your cloud storage organized and uses **"Atomic Snapshots"** to minimize container downtime.
+Designed for **Raspberry Pi** and Linux servers, it supports both **Volume/Bind Mount backups** and **Portainer Configuration backups**.
 
-![Dashboard Screenshot](https://via.placeholder.com/800x400?text=Dashboard+Screenshot+Placeholder)
+## 🚀 Key Features
 
-## 🚀 Features
+### 📦 Backup & Restore
+*   **Smart Volume Detection:** Automatically finds volumes and bind mounts for containers labeled with `backup.enable=true`.
+*   **Portainer API Integration:** Specifically designed to backup Portainer configurations via its API, avoiding database corruption risks.
+*   **Atomic Snapshots:** Stops containers briefly to copy data, then restarts them immediately to minimize downtime before compression begins.
+*   **AES-256 Encryption:** All backups are compressed and encrypted using standard libraries.
+*   **Cloud Sync:** Built-in **Rclone** support to sync backups to Google Drive, S3, Dropbox, and 40+ other providers.
 
-*   **Atomic Snapshots:** Minimizes downtime by stopping the container only for the duration of a fast filesystem copy (`cp -rp`), then immediately restarting it before compression begins.
-*   **7-Zip Powered Engine:** Uses **LZMA2** algorithm for superior compression and **AES-256** for military-grade encryption (including filename encryption).
-*   **Single File Strategy:** Instead of cluttering your cloud with hundreds of files, it creates one consolidated **Master Archive** (`Backup_YYYYMMDD.7z`) per session.
-*   **Smart Volume Detection:** Automatically identifies and backs up volumes and bind mounts of containers labeled with `backup.enable=true`.
-*   **Cloud Sync:** Integrated **Rclone** support to sync encrypted backups to Google Drive, Dropbox, S3, or any other cloud provider.
-*   **Upload & Delete:** Automatically deletes the local master archive after a successful cloud upload to save SD card space on Raspberry Pi.
-*   **Multi-Language Support:** Fully localized UI in **English**, **Türkçe**, and **Deutsch**.
-*   **Notifications:** Real-time status updates via **Gotify**.
-*   **Healthcheck Integration:** Supports **Uptime Kuma** (or similar) heartbeat monitoring via HTTP ping on successful backup completion.
-*   **Security Hardened:** Uses a **Docker Socket Proxy** to prevent privileged access, ensuring the backup container cannot create or destroy other containers.
+### 🖥️ Modern Web UI
+*   **Dashboard:** View system status, last backup stats, and protected container list.
+*   **Settings Editor:** Configure schedules, retention policies, and cloud settings directly from the browser.
+*   **Rclone Config Editor:** Edit your `rclone.conf` file directly within the app (supports directory detection fixes).
+*   **Action Center:** Manually trigger backups for specific containers or run a full system backup.
+*   **Logs & Monitoring:** View real-time system logs and clear them with a single click.
+*   **Multilingual:** Fully localized in **English**, **Türkçe**, and **Deutsch**.
+
+### 🤖 Automation & Security
+*   **Scheduled Backups:** Built-in scheduler runs daily backups at your specified time.
+*   **Notifications:** Integrated **Gotify** support for success/failure alerts.
+*   **Healthchecks:** Supports **Uptime Kuma** / Healthcheck.io pings to monitor backup job heartbeat.
+*   **Secure:** Encrypted `.env` storage for sensitive tokens. Password-protected Web UI.
+
+---
 
 ## 🛠️ Installation
 
-### Prerequisites
+### 1. Prepare your environment
+Create a directory for the project:
+```bash
+mkdir -p docker-backup-guard/backups
+mkdir -p docker-backup-guard/logs
+touch docker-backup-guard/rclone.conf
+cd docker-backup-guard
+```
 
-*   Docker & Docker Compose installed on your host.
-*   An Rclone configuration file (`rclone.conf`) ready.
-
-### 🔒 Security-First Deployment (Recommended)
-
-This project uses a "sidecar" proxy container to securely access the Docker Socket. This prevents the main application from having "Root" access to your Docker daemon.
-
-**docker-compose.yml example:**
+### 2. Docker Compose
+Create a `docker-compose.yml` file:
 
 ```yaml
 version: '3.8'
 
 services:
+  backup-guard:
+    image: ghcr.io/lieferteck/docker-backup-guard:latest # Or build locally
+    container_name: docker-backup-guard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    volumes:
+      # Application State & Config
+      - ./app/.env:/app/.env                 # Stores configuration
+      - ./backups:/backups                   # Local backup storage
+      - ./logs:/app/logs                     # Logs
+      
+      # Rclone Configuration (IMPORTANT: Do NOT use :ro if you want to edit via UI)
+      - ./rclone.conf:/app/rclone.conf
+      
+      # Docker Socket (Required to control containers)
+      # - /var/run/docker.sock:/var/run/docker.sock # (Insecure, see below for Socket Proxy)
+      
+      # Host Filesystem Access (Required to read volumes)
+      - /:/hostfs:ro
+      - /var/lib/docker/volumes:/var/lib/docker/volumes:ro
+    environment:
+      - TZ=Europe/Berlin
+      - DOCKER_HOST=tcp://socket-proxy:2375 # Use Socket Proxy
+    depends_on:
+      - socket-proxy
+    networks:
+      - backup-net
+
+  # Secure Docker Socket Proxy
   socket-proxy:
     image: tecnativa/docker-socket-proxy
     container_name: docker-socket-proxy
@@ -51,26 +91,7 @@ services:
     environment:
       - CONTAINERS=1 # Allow listing
       - POST=1       # Allow start/stop
-    networks:
-      - backup-net
-
-  docker-backup-guard:
-    build: .
-    container_name: docker-backup-guard
-    restart: unless-stopped
-    ports:
-      - "8501:8501"
-    environment:
-      - TZ=Europe/Berlin
-      - DOCKER_HOST=tcp://socket-proxy:2375
-    volumes:
-      - ./.env:/app/.env
-      - ./backups:/backups
-      - ./config/rclone/rclone.conf:/app/rclone.conf:ro
-      - /var/lib/docker/volumes:/var/lib/docker/volumes:ro
-      - /:/hostfs:ro
-    depends_on:
-      - socket-proxy
+      - IMAGES=1     # Allow image inspection
     networks:
       - backup-net
 
@@ -79,106 +100,71 @@ networks:
     driver: bridge
 ```
 
-### ☁️ Creating rclone.conf (Recommended for Windows Users)
-
-If you are running this on a headless server or Raspberry Pi, the easiest way to generate a valid `rclone.conf` is to use your local Windows machine:
-
-1.  **Download Rclone for Windows:**
-    Visit [rclone.org/downloads](https://rclone.org/downloads/) and download the Windows zip file. Extract it to a folder (e.g., `C:\rclone`).
-
-2.  **Generate Config:**
-    Open a command prompt (cmd) or PowerShell in that folder and run:
-    ```powershell
-    ./rclone.exe config
-    ```
-    Follow the interactive steps to set up your cloud provider (Google Drive, S3, Dropbox, etc.).
-
-3.  **Locate the File:**
-    Once finished, your config file is typically saved at:
-    `C:\Users\YOUR_USERNAME\AppData\Roaming\rclone\rclone.conf`
-
-4.  **Import to Docker Backup Guard:**
-    *   Open the file with Notepad.
-    *   Copy the entire content.
-    *   Paste it into the **"Rclone Configuration Content"** box in the Docker Backup Guard Setup Wizard.
-    *   Save your settings!
-
-### Quick Start (Docker Compose)
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/exoss/docker-backup-guard.git
-    cd docker-backup-guard
-    ```
-
-2.  **Run with Docker Compose:**
-    ```bash
-    docker-compose up -d --build
-    ```
-
-3.  **Access the UI:**
-    Open your browser and navigate to `http://localhost:8501`.
-
-### Installation via Portainer Stacks
-
-1.  Log in to Portainer and go to **Stacks**.
-2.  Click **Add stack**.
-3.  Name it `docker-backup-guard`.
-4.  Paste the contents of `docker-compose.yml` into the Web Editor.
-5.  **Important:** Since Portainer might not have access to local relative paths easily, use absolute paths for volumes.
-
-    Example volume mapping:
-    ```yaml
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /path/to/your/backups:/backups
-      - /path/to/your/rclone_config_dir:/app/rclone.conf # Maps a directory to store the config file
-      - /var/lib/docker/volumes:/var/lib/docker/volumes:ro # Required for Smart Volume Detection
-    ```
-    > 🔧 **Technical Note:** The read-only bind mount `/var/lib/docker/volumes:/var/lib/docker/volumes:ro` is critical. It allows the backup engine to directly access and archive named Docker volumes from the host filesystem.
-
-6.  Click **Deploy the stack**.
-
-## 📖 Usage
-
-### 1. Label Your Containers
-To enable backup for a specific container, simply add the following label to its `docker-compose.yml` or run command:
-
-```yaml
-labels:
-  - "backup.enable=true"
+### 3. Start the Container
+```bash
+docker-compose up -d
 ```
 
-### 2. Configure via Wizard
-On first launch, you will be greeted by the **Setup Wizard**. Here you can configure:
-*   **Portainer & Gotify** credentials.
-*   **Healthcheck URL** (e.g., Uptime Kuma push URL).
-*   **Backup Password** (Crucial for 7-Zip encryption!).
-*   **Retention Policy** (How many days to keep backups).
-*   **Rclone Remote Name** (Must match your `rclone.conf`).
-*   **Cloud Destination Path** (Folder on the cloud where backups will be stored).
-*   **Timezone** (Default: Europe/Berlin).
+### 4. Initial Setup
+1.  Open your browser and navigate to `http://YOUR_SERVER_IP:8501`.
+2.  You will be greeted by the **Setup Wizard**.
+3.  Enter your **Portainer URL & Token** (if using Portainer).
+4.  Set a **Backup Password** (used for encryption).
+5.  Configure **Rclone** (paste your config content directly in the UI).
+6.  Save & Restart.
 
-### 3. Backup Process
-*   **Full Backup:** Triggers the backup process for ALL enabled containers.
-    1.  **Smart Check Phase:** Checks container status. If `restarting` or `paused` (e.g., due to Watchtower updates), it waits and retries.
-    2.  **Snapshot Phase:** For each container: Stop (with retry logic) -> Fast Copy (`cp -rp`) -> Start (with retry logic).
-    3.  **Compression Phase:** The snapshot folder is compressed into a single `Backup_XXX.7z` file using gentle settings (`-mx=3 -mmt=2`) to prevent system freeze.
-    4.  **Upload Phase:** The master archive is synced to your defined Cloud Destination.
-    5.  **Healthcheck:** Pings your configured **Healthcheck URL** (Uptime Kuma) upon success.
-    6.  **Cleanup Phase:** The local master archive is deleted immediately after upload to save space.
+---
 
-*   **Single Container Backup:** Triggers the same process but only for the selected container.
+## ⚙️ Configuration
 
-## 🌍 Multi-Language Support
-The application automatically detects your language preference during setup. You can choose between:
-*   🇬🇧 English
-*   🇹🇷 Türkçe
-*   🇩🇪 Deutsch
+### Label Your Containers
+To tell Docker Backup Guard which containers to backup, simply add the label `backup.enable=true` to them in your `docker-compose.yml` or via Portainer.
 
-## 🔒 Security Note
-*   **Never share your `BACKUP_PASSWORD`.** It is used to encrypt the 7-Zip archive. Without it, your data is irretrievable.
-*   Sensitive environment variables are stored in `.env` and are never exposed in the UI logs.
+```yaml
+services:
+  my-database:
+    image: postgres:14
+    labels:
+      - "backup.enable=true"
+```
 
-## 📜 License
-This project is licensed under the MIT License.
+### Environment Variables
+The application manages these automatically via the UI, but you can manually edit `.env/config.env`:
+
+| Variable | Description |
+| :--- | :--- |
+| `BACKUP_PASSWORD` | Password for AES encryption. |
+| `RETENTION_DAYS` | Number of days to keep local/cloud backups. |
+| `SCHEDULE_ENABLE` | `true` or `false` to enable daily backups. |
+| `SCHEDULE_TIME` | Time of day to run backup (e.g., `03:00`). |
+| `RCLONE_REMOTE_NAME` | Name of the remote in `rclone.conf` (default: `remote`). |
+| `RCLONE_DESTINATION` | Path on the cloud remote (default: `backups`). |
+| `GOTIFY_URL` | Gotify server URL for notifications. |
+| `HEALTHCHECK_URL` | URL to ping on success (e.g., Uptime Kuma). |
+
+---
+
+## ☁️ Cloud Sync (Rclone) setup
+If you don't have an `rclone.conf` yet:
+1.  **Use the UI:** The Settings tab includes an editor where you can paste a config generated on another machine (Windows/Mac).
+2.  **Generate Locally:** Run `rclone config` on your PC, follow the steps for Google Drive/S3/Dropbox, and copy the output to the Web UI.
+
+**Note:** If you see a "Permission denied" error when saving Rclone config in the UI, ensure your `docker-compose.yml` does **not** have `:ro` (read-only) on the `rclone.conf` volume mount.
+
+---
+
+## 🛡️ Security
+*   **Web UI Access:** Protected by a login screen (default credentials set during setup).
+*   **Encryption:** Sensitive environment variables (Tokens, Passwords) are encrypted at rest using `Fernet` (symmetric encryption).
+*   **Backup Encryption:** Archives are encrypted with AES-256. You **must** remember your backup password to restore data!
+
+---
+
+## 📜 Logs & Troubleshooting
+*   Logs are viewable in the **Logs** tab of the dashboard.
+*   You can clear logs using the **"Clear Logs"** button to free up space.
+*   Common Issue: *Rclone config path is a directory*. The app automatically detects this Docker misconfiguration and writes to `rclone.conf` inside that directory.
+
+---
+
+**License:** MIT
