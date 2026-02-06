@@ -6,6 +6,7 @@ import os
 import time
 import shutil
 import subprocess
+import requests
 from datetime import datetime
 from dotenv import load_dotenv
 from app.api_handlers import APIHandler

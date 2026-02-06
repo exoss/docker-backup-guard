@@ -442,14 +442,14 @@ def show_dashboard():
             
             if test_conn:
                 if new_portainer_url and new_portainer_token:
-                    with st.spinner("Testing..."):
+                    with st.spinner(get_text(lang, "status_test_running")):
                         res = api_handlers.APIHandler.test_portainer_connection(new_portainer_url, new_portainer_token)
                         if res:
                             st.success(get_text(lang, "status_test_success"))
                         else:
                             st.error(get_text(lang, "status_test_failed"))
                 else:
-                    st.warning("Portainer URL & Token required.")
+                    st.warning(get_text(lang, "warning_portainer_required"))
             
             if submitted:
                 env_updates = {
@@ -495,11 +495,11 @@ def show_dashboard():
                             with open(rclone_path, "r") as f:
                                 rclone_content = f.read()
                         except Exception as e:
-                            st.error(f"Error reading sub-file: {e}")
-        else:
-            st.info("rclone.conf not found. You can create it here.")
-        
-        new_rclone_content = st.text_area("rclone.conf Content", value=rclone_content, height=200, disabled=disabled, help=get_text(lang, "help_rclone_content_hint"))
+                             st.error(f"Error reading sub-file: {e}")
+         else:
+             st.info(get_text(lang, "info_rclone_not_found"))
+         
+         new_rclone_content = st.text_area("rclone.conf Content", value=rclone_content, height=200, disabled=disabled, help=get_text(lang, "help_rclone_content_hint"))
         
         if st.button(get_text(lang, "btn_save_rclone"), disabled=disabled):
             try:
@@ -549,7 +549,7 @@ def show_dashboard():
                     try:
                         image_tags = container.image.tags
                     except Exception:
-                        image_tags = "Unknown (Permission Denied)"
+                        image_tags = get_text(lang, "unknown_permission_denied")
                     st.write(f"**{get_text(lang, 'label_image')}:** {image_tags}")
                     
                     if st.button(get_text(lang, "btn_backup").format(name=container.name), key=f"btn_{container.id}"):

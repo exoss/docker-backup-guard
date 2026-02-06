@@ -139,7 +139,13 @@ TRANSLATIONS = {
         "btn_save_rclone": "💾 Save Rclone Config",
         "status_rclone_saved": "✅ Rclone config saved successfully!",
         "error_rclone_save": "❌ Error saving rclone config: {error}",
-        "warning_ro_mount": "⚠️ Warning: File is Read-Only. Please remove ':ro' from docker-compose.yml"
+        "warning_ro_mount": "⚠️ Warning: File is Read-Only. Please remove ':ro' from docker-compose.yml",
+        
+        # UI Strings
+        "unknown_permission_denied": "Unknown (Permission Denied)",
+        "info_rclone_not_found": "rclone.conf not found. You can create it here.",
+        "status_test_running": "Testing...",
+        "warning_portainer_required": "Portainer URL & Token required."
     },
     
     "tr": {
@@ -281,7 +287,13 @@ TRANSLATIONS = {
         "btn_save_rclone": "💾 Rclone Ayarlarını Kaydet",
         "status_rclone_saved": "✅ Rclone ayarları başarıyla kaydedildi!",
         "error_rclone_save": "❌ Rclone ayarları kaydedilirken hata: {error}",
-        "warning_ro_mount": "⚠️ Uyarı: Dosya Salt Okunur. Lütfen docker-compose.yml dosyasından ':ro' ibaresini kaldırın."
+        "warning_ro_mount": "⚠️ Uyarı: Dosya Salt Okunur. Lütfen docker-compose.yml dosyasından ':ro' ibaresini kaldırın.",
+        
+        # UI Strings
+        "unknown_permission_denied": "Bilinmiyor (Erişim Reddedildi)",
+        "info_rclone_not_found": "rclone.conf bulunamadı. Buradan oluşturabilirsiniz.",
+        "status_test_running": "Test ediliyor...",
+        "warning_portainer_required": "Portainer URL ve Token gerekli."
     },
 
     "de": {
@@ -423,7 +435,13 @@ TRANSLATIONS = {
         "btn_save_rclone": "💾 Rclone-Konfiguration speichern",
         "status_rclone_saved": "✅ Rclone-Konfiguration erfolgreich gespeichert!",
         "error_rclone_save": "❌ Fehler beim Speichern: {error}",
-        "warning_ro_mount": "⚠️ Warnung: Datei ist schreibgeschützt. Bitte entfernen Sie ':ro' aus docker-compose.yml"
+        "warning_ro_mount": "⚠️ Warnung: Datei ist schreibgeschützt. Bitte entfernen Sie ':ro' aus docker-compose.yml",
+        
+        # UI Strings
+        "unknown_permission_denied": "Unbekannt (Zugriff verweigert)",
+        "info_rclone_not_found": "rclone.conf nicht gefunden. Sie können es hier erstellen.",
+        "status_test_running": "Test läuft...",
+        "warning_portainer_required": "Portainer URL & Token erforderlich."
     }
 }
 
