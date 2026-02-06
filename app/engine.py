@@ -6,6 +6,7 @@ import shutil
 import subprocess
 from datetime import datetime
 from dotenv import load_dotenv
+from app.api_handlers import APIHandler
 
 class BackupEngine:
     def __init__(self):
@@ -136,6 +137,23 @@ class BackupEngine:
             return False
 
         self._log(f"Starting Backup for {len(candidates)} containers...")
+
+        # Step 1.5: Portainer API Backup (Standalone)
+        # Attempt to backup Portainer via API using stored credentials, regardless of containers.
+        try:
+            api = APIHandler()
+            if api.portainer_url and api.portainer_token:
+                self._log("Portainer credentials found. Attempting API Backup...")
+                portainer_stage_dir = os.path.join(temp_dir, "Portainer_API_Backup")
+                os.makedirs(portainer_stage_dir, exist_ok=True)
+                backup_file = os.path.join(portainer_stage_dir, f"portainer_config_{timestamp}.tar.gz")
+                
+                if api.download_portainer_backup(backup_file, password=self.backup_password):
+                    self._log(f"Portainer API backup successful: {backup_file}")
+                else:
+                    self._log("Portainer API backup failed.", "WARNING")
+        except Exception as e:
+            self._log(f"Error during Portainer API backup: {e}", "WARNING")
 
         # Step 2: Snapshot Phase (Stop -> Copy -> Start)
         for container in candidates:

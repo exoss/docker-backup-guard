@@ -59,6 +59,48 @@ class APIHandler:
         except Exception as e:
             logger.error(f"Healthcheck ping error: {e}")
 
+    def download_portainer_backup(self, output_path, password=None):
+        """
+        Downloads Portainer configuration backup via API.
+        POST /api/backup
+        """
+        if not self.portainer_url or not self.portainer_token:
+            logger.warning("Portainer credentials missing. Cannot perform API backup.")
+            return False
+
+        headers = {"X-API-Key": self.portainer_token}
+        
+        # Ensure URL doesn't end with slash
+        base_url = self.portainer_url.rstrip("/")
+        url = f"{base_url}/api/backup"
+        
+        # Payload: Portainer expects a JSON with password if encryption is desired.
+        # If password is None/Empty, it might return unencrypted or fail depending on version.
+        # We'll use the provided password (usually system backup password) for security.
+        payload = {}
+        if password:
+            payload["password"] = password
+            
+        try:
+            logger.info(f"Requesting Portainer backup from {url}...")
+            response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60)
+            response.raise_for_status()
+            
+            # Write to file
+            with open(output_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    
+            logger.info(f"Portainer backup downloaded successfully: {output_path}")
+            return True
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Portainer API Backup error: {e}")
+            # Try to log response text if available for debugging
+            if hasattr(e, 'response') and e.response:
+                logger.error(f"API Response: {e.response.text}")
+            return False
+
     def get_portainer_backup(self):
         """Fetches stack/container info via Portainer API (Not for backup, informational)."""
         # Note: Portainer API structure may vary by version. Here we perform a basic connection test.
