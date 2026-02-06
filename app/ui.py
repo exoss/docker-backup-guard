@@ -275,7 +275,7 @@ def show_dashboard():
                     def update_progress(msg):
                         status.write(msg)
 
-                    success = backup_engine.perform_backup(progress_callback=update_progress)
+                    success = backup_engine.perform_backup(progress_callback=update_progress, lang=lang)
                     if success:
                         st.success(get_text(lang, "status_complete"))
                         api_handlers.APIHandler().send_gotify_notification(

@@ -105,7 +105,23 @@ TRANSLATIONS = {
         "btn_backup_portainer": "📦 Backup Portainer Config Only",
         "status_backup_portainer_start": "Backing up Portainer Configuration...",
         "status_backup_portainer_success": "✅ Portainer Configuration Backup Successful!",
-        "status_backup_portainer_failed": "❌ Portainer Backup Failed!"
+        "status_backup_portainer_failed": "❌ Portainer Backup Failed!",
+
+        # Progress Messages
+        "progress_processing_group": "Processing Group: {group} ({count} containers)",
+        "progress_stopping": "⏹️ Stopping {group}...",
+        "progress_snapshot": "📸 Snapshotting: {path}",
+        "progress_error_group": "❌ Error in group {group}: {error}",
+        "progress_restarting": "▶️ Restarting {group}...",
+        "progress_password_error": "❌ Error: BACKUP_PASSWORD not set.",
+        "progress_no_containers": "⚠️ No containers found.",
+        "progress_backup_portainer": "📦 Backing up Portainer Configuration...",
+        "progress_no_data": "❌ No data found to backup.",
+        "progress_compressing": "🗜️ Compressing archive (this may take a while)...",
+        "progress_compression_failed": "❌ Compression Failed: {error}",
+        "progress_uploading": "☁️ Uploading to Cloud...",
+        "progress_upload_success": "✅ Cloud Sync Successful. Cleaning up local archive.",
+        "progress_upload_failed": "⚠️ Cloud Sync Failed."
     },
     
     "tr": {
@@ -213,7 +229,23 @@ TRANSLATIONS = {
         "btn_backup_portainer": "📦 Sadece Portainer Konfigürasyonunu Yedekle",
         "status_backup_portainer_start": "Portainer Konfigürasyonu Yedekleniyor...",
         "status_backup_portainer_success": "✅ Portainer Konfigürasyonu Başarıyla Yedeklendi!",
-        "status_backup_portainer_failed": "❌ Portainer Yedeklemesi Başarısız!"
+        "status_backup_portainer_failed": "❌ Portainer Yedeklemesi Başarısız!",
+
+        # Progress Messages
+        "progress_processing_group": "Grup İşleniyor: {group} ({count} konteyner)",
+        "progress_stopping": "⏹️ Durduruluyor: {group}...",
+        "progress_snapshot": "📸 Anlık Görüntü Alınıyor: {path}",
+        "progress_error_group": "❌ Grup hatası {group}: {error}",
+        "progress_restarting": "▶️ Yeniden Başlatılıyor: {group}...",
+        "progress_password_error": "❌ Hata: BACKUP_PASSWORD ayarlanmamış.",
+        "progress_no_containers": "⚠️ Yedeklenecek konteyner bulunamadı.",
+        "progress_backup_portainer": "📦 Portainer Konfigürasyonu Yedekleniyor...",
+        "progress_no_data": "❌ Yedeklenecek veri bulunamadı.",
+        "progress_compressing": "🗜️ Arşiv sıkıştırılıyor (bu işlem biraz sürebilir)...",
+        "progress_compression_failed": "❌ Sıkıştırma Başarısız: {error}",
+        "progress_uploading": "☁️ Buluta Yükleniyor...",
+        "progress_upload_success": "✅ Bulut Senkronizasyonu Başarılı. Yerel arşiv temizleniyor.",
+        "progress_upload_failed": "⚠️ Bulut Senkronizasyonu Başarısız."
     },
     
     "de": {
@@ -321,7 +353,23 @@ TRANSLATIONS = {
         "btn_backup_portainer": "📦 Nur Portainer-Konfiguration sichern",
         "status_backup_portainer_start": "Sichere Portainer-Konfiguration...",
         "status_backup_portainer_success": "✅ Portainer-Konfigurationssicherung erfolgreich!",
-        "status_backup_portainer_failed": "❌ Portainer-Sicherung fehlgeschlagen!"
+        "status_backup_portainer_failed": "❌ Portainer-Sicherung fehlgeschlagen!",
+
+        # Progress Messages
+        "progress_processing_group": "Verarbeite Gruppe: {group} ({count} Container)",
+        "progress_stopping": "⏹️ Stoppe {group}...",
+        "progress_snapshot": "📸 Schnappschuss: {path}",
+        "progress_error_group": "❌ Fehler in Gruppe {group}: {error}",
+        "progress_restarting": "▶️ Starte {group} neu...",
+        "progress_password_error": "❌ Fehler: BACKUP_PASSWORD nicht gesetzt.",
+        "progress_no_containers": "⚠️ Keine Container gefunden.",
+        "progress_backup_portainer": "📦 Sichere Portainer-Konfiguration...",
+        "progress_no_data": "❌ Keine Daten zum Sichern gefunden.",
+        "progress_compressing": "🗜️ Komprimiere Archiv (dies kann eine Weile dauern)...",
+        "progress_compression_failed": "❌ Komprimierung fehlgeschlagen: {error}",
+        "progress_uploading": "☁️ Hochladen in die Cloud...",
+        "progress_upload_success": "✅ Cloud-Sync erfolgreich. Bereinige lokales Archiv.",
+        "progress_upload_failed": "⚠️ Cloud-Sync fehlgeschlagen."
     }
 }
 
