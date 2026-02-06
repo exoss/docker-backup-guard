@@ -27,7 +27,9 @@ class APIHandler:
             return False
 
         try:
-            url = f"{self.gotify_url}/message?token={self.gotify_token}"
+            # Fix URL concatenation to avoid double slashes
+            base_url = self.gotify_url.rstrip("/")
+            url = f"{base_url}/message?token={self.gotify_token}"
             payload = {
                 "title": title,
                 "message": message,

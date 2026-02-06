@@ -6,7 +6,6 @@ import shutil
 import subprocess
 from datetime import datetime
 from dotenv import load_dotenv
-from rclone_python import rclone
 
 class BackupEngine:
     def __init__(self):
@@ -76,7 +75,7 @@ class BackupEngine:
         return candidates
 
     def _rclone_sync(self, source_file):
-        """Syncs encrypted file to cloud via Rclone (using rclone-python wrapper)"""
+        """Syncs encrypted file to cloud via Rclone (using subprocess)."""
         if not os.path.exists(self.rclone_config):
             self._log(f"Rclone configuration file not found: {self.rclone_config}", "WARNING")
             return False
@@ -87,12 +86,20 @@ class BackupEngine:
             
             self._log(f"Starting Rclone sync: {source_file} -> {target_path}")
             
-            # Using rclone-python wrapper
-            rclone.copy(
-                source_file, 
-                target_path, 
-                flags=["--config", self.rclone_config]
-            )
+            # Using direct subprocess command instead of rclone-python wrapper
+            # to avoid 'flags' keyword argument errors and improve stability.
+            cmd = [
+                "rclone", "copy",
+                source_file,
+                target_path,
+                "--config", self.rclone_config
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                self._log(f"Rclone Error: {result.stderr}", "ERROR")
+                return False
             
             self._log("Rclone sync successful.")
             return True

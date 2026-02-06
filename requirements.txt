@@ -2,4 +2,3 @@ streamlit
 docker
 python-dotenv
 requests
-rclone-python
