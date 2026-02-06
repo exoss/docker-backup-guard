@@ -268,12 +268,15 @@ class BackupEngine:
                 groups[container.name] = [container]
         return groups
 
-    def _process_group_backup(self, group_name, containers, backup_tree_root):
+    def _process_group_backup(self, group_name, containers, backup_tree_root, progress_callback=None):
         """
         Stops all containers in the group, copies their volumes preserving structure, 
         and restarts them immediately.
         """
-        self._log(f"Processing Group: {group_name} ({len(containers)} containers)")
+        msg = f"Processing Group: {group_name} ({len(containers)} containers)"
+        self._log(msg)
+        if progress_callback:
+            progress_callback(msg)
         
         # 1. Collect Unique Volume Paths
         unique_paths = set()
@@ -289,6 +292,9 @@ class BackupEngine:
         stopped_containers = []
         try:
             self._log(f"Stopping group {group_name}...")
+            if progress_callback:
+                progress_callback(f"⏹️ Stopping {group_name}...")
+                
             for container in containers:
                 try:
                     container.stop()
@@ -314,6 +320,8 @@ class BackupEngine:
                         os.makedirs(dest_parent, exist_ok=True)
                     
                     self._log(f"Snapshotting: {src} -> {dest}")
+                    if progress_callback:
+                        progress_callback(f"📸 Snapshotting: {relative_path}")
                     
                     # Check if src is directory
                     if os.path.isdir(src):
@@ -333,17 +341,22 @@ class BackupEngine:
 
         except Exception as e:
             self._log(f"Error processing group {group_name}: {e}", "ERROR")
+            if progress_callback:
+                progress_callback(f"❌ Error in group {group_name}: {e}")
             
         finally:
             # 4. Start Phase
             self._log(f"Restarting group {group_name}...")
+            if progress_callback:
+                progress_callback(f"▶️ Restarting {group_name}...")
+                
             for container in stopped_containers:
                 try:
                     container.start()
                 except Exception as e:
                     self._log(f"Failed to start {container.name}: {e}", "ERROR")
 
-    def perform_backup(self, container_id=None):
+    def perform_backup(self, container_id=None, progress_callback=None):
         """
         Executes the 'Stack-Aware' backup process.
         1. Groups containers by Docker Compose Project.
@@ -353,6 +366,8 @@ class BackupEngine:
         """
         if not self.backup_password:
             self._log("ERROR: BACKUP_PASSWORD is not set!", "ERROR")
+            if progress_callback:
+                progress_callback("❌ Error: BACKUP_PASSWORD not set.")
             return False
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -374,6 +389,8 @@ class BackupEngine:
                 self._log("No containers found for backup.", "WARNING")
                 shutil.rmtree(temp_dir)
                 self._update_state_file("skipped", 0, 0)
+                if progress_callback:
+                    progress_callback("⚠️ No containers found.")
                 return False
 
             self._log(f"Starting Backup for {len(candidates)} containers...")
@@ -381,6 +398,8 @@ class BackupEngine:
         # Step 1.5: Portainer API Backup (Standalone)
         # Only run if full backup (no container_id) or if specifically requested?
         # Let's run it always as it's quick and useful context.
+        if progress_callback:
+            progress_callback("📦 Backing up Portainer Configuration...")
         self.perform_portainer_backup()
 
         # Step 2: Grouping & Snapshot
@@ -388,7 +407,7 @@ class BackupEngine:
         self._log(f"Found {len(groups)} backup groups (Stacks/Standalone).")
         
         for group_name, containers in groups.items():
-            self._process_group_backup(group_name, containers, backup_tree_root)
+            self._process_group_backup(group_name, containers, backup_tree_root, progress_callback=progress_callback)
 
         # Step 3: Compression Phase (Heavy Lifting)
         try:
@@ -399,9 +418,13 @@ class BackupEngine:
             if not os.listdir(backup_tree_root):
                 self._log("No data found in staging directory. Aborting backup.", "ERROR")
                 shutil.rmtree(temp_dir)
+                if progress_callback:
+                    progress_callback("❌ No data found to backup.")
                 return False
 
             self._log("Compressing Backup Archive (Gentle Mode: -mx=3)...")
+            if progress_callback:
+                progress_callback("🗜️ Compressing archive (this may take a while)...")
             
             cmd_master = [
                 "7z", "a", "-t7z",
@@ -417,6 +440,8 @@ class BackupEngine:
             if result_master.returncode != 0:
                 self._log(f"Compression Error: {result_master.stderr}", "ERROR")
                 self._update_state_file("failed", 0, len(candidates))
+                if progress_callback:
+                    progress_callback(f"❌ Compression Failed: {result_master.stderr}")
                 return False
             
             self._log(f"Backup Archive created: {master_archive_path}")
@@ -426,15 +451,22 @@ class BackupEngine:
             self._update_state_file("success", archive_size, len(candidates))
 
             # Step 4: Cloud Sync
+            if progress_callback:
+                progress_callback("☁️ Uploading to Cloud...")
             success = self._rclone_sync(master_archive_path)
             
             if success:
                 # Immediate cleanup for successful upload
                 self._log(f"Cloud sync successful. Deleting local archive: {master_archive_name}")
+                if progress_callback:
+                    progress_callback("✅ Cloud Sync Successful. Cleaning up local archive.")
                 try:
                     os.remove(master_archive_path)
                 except OSError as e:
                     self._log(f"Error deleting local archive: {e}", "WARNING")
+            else:
+                if progress_callback:
+                    progress_callback("⚠️ Cloud Sync Failed.")
             
             return success
             

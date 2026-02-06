@@ -271,7 +271,11 @@ def show_dashboard():
                     st.error(get_text(lang, "error_no_pass"))
                     status.update(label=get_text(lang, "status_failed"), state="error")
                 else:
-                    success = backup_engine.perform_backup()
+                    # Define callback for real-time progress updates
+                    def update_progress(msg):
+                        status.write(msg)
+
+                    success = backup_engine.perform_backup(progress_callback=update_progress)
                     if success:
                         st.success(get_text(lang, "status_complete"))
                         api_handlers.APIHandler().send_gotify_notification(
@@ -403,7 +407,11 @@ def show_dashboard():
                                  st.error(get_text(lang, "error_no_pass"))
                                  status.update(label=get_text(lang, "status_failed"), state="error")
                             else:
-                                success = backup_engine.perform_backup(container_id=container.id)
+                                # Define callback for real-time progress updates
+                                def update_progress(msg):
+                                    status.write(msg)
+                                    
+                                success = backup_engine.perform_backup(container_id=container.id, progress_callback=update_progress)
                                 if success:
                                     st.success(get_text(lang, "status_complete"))
                                     api_handlers.APIHandler().send_gotify_notification(
