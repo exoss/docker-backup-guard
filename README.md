@@ -53,7 +53,7 @@ version: '3.8'
 
 services:
   backup-guard:
-    image: ghcr.io/exoss/docker-backup-guard:latest # Or build locally
+    image: ghcr.io/exoss/docker-backup-guard-v2:latest # Or build locally
     container_name: docker-backup-guard
     restart: unless-stopped
     ports:
@@ -167,6 +167,4 @@ If you don't have an `rclone.conf` yet:
 
 ---
 
-## ⚖️ License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**License:** MIT
