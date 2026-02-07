@@ -135,3 +135,26 @@ class APIHandler:
         except requests.exceptions.RequestException as e:
             logger.error(f"Portainer Connection Test failed: {e}")
             return None
+
+    @staticmethod
+    def test_gotify_connection(url, token):
+        """Tests connectivity to Gotify API using provided credentials."""
+        if not url or not token:
+            return False
+
+        try:
+            # Fix URL concatenation to avoid double slashes
+            base_url = url.rstrip("/")
+            # Send a test message
+            api_url = f"{base_url}/message?token={token}"
+            payload = {
+                "title": "Test Notification",
+                "message": "This is a test message from Docker Backup Guard.",
+                "priority": 5
+            }
+            response = requests.post(api_url, json=payload, timeout=5)
+            response.raise_for_status()
+            return True
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Gotify Connection Test failed: {e}")
+            return False

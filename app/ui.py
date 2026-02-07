@@ -158,6 +158,17 @@ def show_setup_wizard():
         with col4:
             gotify_token = st.text_input(get_text(lang, "label_gotify_token"), type="password")
 
+        if st.form_submit_button(get_text(lang, "btn_test_gotify")):
+            if gotify_url and gotify_token:
+                with st.spinner(get_text(lang, "status_test_running")):
+                    res = api_handlers.APIHandler.test_gotify_connection(gotify_url, gotify_token)
+                    if res:
+                        st.success(get_text(lang, "status_test_success"))
+                    else:
+                        st.error(get_text(lang, "status_test_failed"))
+            else:
+                st.warning(get_text(lang, "warning_gotify_required"))
+
         st.markdown("---")
         st.subheader(get_text(lang, "subheader_security"))
         col5, col6 = st.columns(2)
@@ -470,10 +481,12 @@ def show_dashboard():
                 new_web_ui_password = st.text_input(get_text(lang, "label_web_ui_password"), value=web_pass_display, type="password", disabled=disabled)
 
             st.markdown("---")
-            col_b1, col_b2 = st.columns([1, 1])
+            col_b1, col_b2, col_b3 = st.columns([1, 1, 1])
             with col_b1:
                 test_conn = st.form_submit_button(get_text(lang, "btn_test_connection"), disabled=disabled)
             with col_b2:
+                test_gotify = st.form_submit_button(get_text(lang, "btn_test_gotify"), disabled=disabled)
+            with col_b3:
                 submitted = st.form_submit_button(get_text(lang, "btn_save_changes"), disabled=disabled)
             
             if test_conn:
@@ -486,6 +499,17 @@ def show_dashboard():
                             st.error(get_text(lang, "status_test_failed"))
                 else:
                     st.warning(get_text(lang, "warning_portainer_required"))
+
+            if test_gotify:
+                if new_gotify_url and new_gotify_token:
+                    with st.spinner(get_text(lang, "status_test_running")):
+                        res = api_handlers.APIHandler.test_gotify_connection(new_gotify_url, new_gotify_token)
+                        if res:
+                            st.success(get_text(lang, "status_test_success"))
+                        else:
+                            st.error(get_text(lang, "status_test_failed"))
+                else:
+                    st.warning(get_text(lang, "warning_gotify_required"))
             
             if submitted:
                 env_updates = {

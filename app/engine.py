@@ -515,6 +515,14 @@ class BackupEngine:
             if result_master.returncode != 0:
                 self._log(f"Compression Error: {result_master.stderr}", "ERROR")
                 self._update_state_file("failed", 0, len(candidates))
+                
+                # Send Gotify Notification (Failure)
+                APIHandler().send_gotify_notification(
+                    get_text(lang, "notif_full_error_title"), 
+                    get_text(lang, "notif_full_error_msg"), 
+                    priority=8
+                )
+                
                 if progress_callback:
                     progress_callback(get_text(lang, "progress_compression_failed").format(error=result_master.stderr))
                 return False
@@ -538,6 +546,12 @@ class BackupEngine:
                 
                 # Send Healthcheck Ping
                 self._send_healthcheck()
+                
+                # Send Gotify Notification
+                APIHandler().send_gotify_notification(
+                    get_text(lang, "notif_full_success_title"), 
+                    get_text(lang, "notif_full_success_msg")
+                )
                 
                 try:
                     os.remove(master_archive_path)

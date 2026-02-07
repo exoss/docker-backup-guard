@@ -15,6 +15,7 @@ TRANSLATIONS = {
         "label_portainer_token": "Portainer Access Token",
         "help_portainer_token": "API Token obtained from Portainer",
         "btn_test_connection": "🧪 Test Connection",
+        "btn_test_gotify": "🔔 Test Gotify",
         "status_test_success": "✅ Connection Successful!",
         "status_test_failed": "❌ Connection Failed. Check URL and Token.",
         
@@ -147,7 +148,8 @@ TRANSLATIONS = {
         "unknown_permission_denied": "Unknown (Permission Denied)",
         "info_rclone_not_found": "rclone.conf not found. You can create it here.",
         "status_test_running": "Testing...",
-        "warning_portainer_required": "Portainer URL & Token required."
+        "warning_portainer_required": "Portainer URL & Token required.",
+        "warning_gotify_required": "Gotify URL & Token required."
     },
     
     "tr": {
@@ -165,6 +167,7 @@ TRANSLATIONS = {
         "label_portainer_token": "Portainer Erişim Tokeni",
         "help_portainer_token": "Portainer'dan alacağınız API Token",
         "btn_test_connection": "🧪 Bağlantıyı Test Et",
+        "btn_test_gotify": "🔔 Gotify'ı Test Et",
         "status_test_success": "✅ Bağlantı Başarılı!",
         "status_test_failed": "❌ Bağlantı Başarısız. URL ve Token'i kontrol edin.",
         
@@ -297,7 +300,8 @@ TRANSLATIONS = {
         "unknown_permission_denied": "Bilinmiyor (Erişim Reddedildi)",
         "info_rclone_not_found": "rclone.conf bulunamadı. Buradan oluşturabilirsiniz.",
         "status_test_running": "Test ediliyor...",
-        "warning_portainer_required": "Portainer URL ve Token gerekli."
+        "warning_portainer_required": "Portainer URL ve Token gerekli.",
+        "warning_gotify_required": "Gotify URL ve Token gerekli."
     },
 
     "de": {
@@ -315,6 +319,7 @@ TRANSLATIONS = {
         "label_portainer_token": "Portainer Zugriffs-Token",
         "help_portainer_token": "API-Token von Portainer",
         "btn_test_connection": "🧪 Verbindung testen",
+        "btn_test_gotify": "🔔 Gotify testen",
         "status_test_success": "✅ Verbindung erfolgreich!",
         "status_test_failed": "❌ Verbindung fehlgeschlagen. Überprüfen Sie URL und Token.",
         
@@ -446,8 +451,9 @@ TRANSLATIONS = {
         # UI Strings
         "unknown_permission_denied": "Unbekannt (Zugriff verweigert)",
         "info_rclone_not_found": "rclone.conf nicht gefunden. Sie können es hier erstellen.",
-        "status_test_running": "Test läuft...",
-        "warning_portainer_required": "Portainer URL & Token erforderlich."
+        "status_test_running": "Test...",
+        "warning_portainer_required": "Portainer URL & Token erforderlich.",
+        "warning_gotify_required": "Gotify URL & Token erforderlich."
     }
 }
 
