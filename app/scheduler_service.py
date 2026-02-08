@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 from app.engine import BackupEngine
 
 # Configure Logging
+log_dir = "logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
 logging.basicConfig(
     filename='logs/app.log',
     level=logging.INFO,
