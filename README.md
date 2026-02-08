@@ -53,7 +53,7 @@ version: '3.8'
 
 services:
   backup-guard:
-    image: ghcr.io/exoss/docker-backup-guard-v2:latest # Or build locally
+    image: ghcr.io/exoss/docker-backup-guard:latest # Or build locally
     container_name: docker-backup-guard
     restart: unless-stopped
     ports:
