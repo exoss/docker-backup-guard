@@ -26,11 +26,14 @@ ENV PYTHONPATH=/app
 # Uygulama kodlarını kopyala
 COPY . .
 
+# Entrypoint scriptine çalıştırma izni ver
+RUN chmod +x entrypoint.sh
+
 # Streamlit portunu dışarı aç
 EXPOSE 8501
 
 # Healthcheck
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Uygulamayı başlat
-CMD ["streamlit", "run", "main.py", "--server.address=0.0.0.0"]
+# Uygulamayı başlat (Entrypoint script üzerinden)
+CMD ["./entrypoint.sh"]

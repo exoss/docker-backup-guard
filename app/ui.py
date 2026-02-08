@@ -687,7 +687,8 @@ def run():
     if not check_password():
         st.stop()  # Stop execution if not logged in
 
-    # Start Scheduler in Background (Singleton)
-    start_scheduler()
+    # Scheduler is now started via entrypoint.sh as a separate process.
+    # We no longer start it here to avoid duplication and dependency on UI session.
+    # start_scheduler()
     
     show_dashboard()
