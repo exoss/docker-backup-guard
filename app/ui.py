@@ -14,6 +14,7 @@ from app.languages import get_text, TRANSLATIONS
 from app.security import encrypt_value, decrypt_value
 
 ENV_FILE = ".env"
+APP_VERSION = "v1.0.2"
 
 def get_env_path():
     """Determines the correct path for the .env file."""
@@ -323,6 +324,7 @@ def show_dashboard():
     
     st.sidebar.title(get_text(lang, "menu_title"))
     st.sidebar.success(get_text(lang, "system_online"))
+    st.sidebar.caption(f"{APP_VERSION}")
     
     # Logout Button
     if st.sidebar.button(get_text(lang, "btn_logout")):
