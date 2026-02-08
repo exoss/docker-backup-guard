@@ -183,6 +183,12 @@ def show_setup_wizard():
             tz = st.text_input(get_text(lang, "label_timezone"), value="Europe/Berlin")
         with col8:
             healthcheck_url = st.text_input(get_text(lang, "label_healthcheck"), placeholder="https://hc-ping.com/...")
+        
+        col_h1, col_h2 = st.columns(2)
+        with col_h1:
+            heartbeat_url = st.text_input(get_text(lang, "label_heartbeat_url"), placeholder="https://uptime.kuma/api/push/...", help=get_text(lang, "help_heartbeat_url"))
+        with col_h2:
+            heartbeat_interval = st.number_input(get_text(lang, "label_heartbeat_interval"), min_value=0, value=0, help=get_text(lang, "help_heartbeat_interval"))
 
         st.markdown("---")
         st.subheader(get_text(lang, "header_login"))
@@ -302,6 +308,8 @@ def show_setup_wizard():
                     "RETENTION_DAYS": retention,
                     "TZ": tz,
                     "HEALTHCHECK_URL": healthcheck_url,
+                    "HEARTBEAT_URL": heartbeat_url,
+                    "HEARTBEAT_INTERVAL": heartbeat_interval,
                     "RCLONE_CONFIG_PATH": real_rclone_path,
                     "RCLONE_REMOTE_NAME": final_remote_name,
                     "RCLONE_DESTINATION": rclone_dest,
