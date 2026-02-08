@@ -7,6 +7,7 @@ import time
 import shutil
 import subprocess
 import requests
+import urllib.parse
 from datetime import datetime
 from dotenv import load_dotenv
 from app.api_handlers import APIHandler
@@ -58,19 +59,85 @@ class BackupEngine:
         # Also print to stdout if not handled by root logger (redundancy check, though root usually has StreamHandler)
         # print(f"[{level}] {message}") 
 
-    def _send_healthcheck(self):
-        """Sends a ping to the configured Healthcheck URL (e.g., Uptime Kuma)."""
+    def _send_healthcheck(self, status="success", message=""):
+        """
+        Sends a ping to the configured Healthcheck URL.
+        Supports Healthchecks.io and Uptime Kuma (Push).
+        """
         if not self.healthcheck_url:
             return
 
+        url = self.healthcheck_url.strip()
+        final_url = url
+        
+        # --- Service Detection & URL Construction ---
+        
+        # 1. Healthchecks.io (hc-ping.com)
+        if "hc-ping.com" in url:
+            if status == "start":
+                final_url = f"{url}/start"
+            elif status == "failure":
+                final_url = f"{url}/fail"
+            # "success" uses base URL
+            
+            # Healthchecks.io allows POST body for logs
+            if message:
+                try:
+                    self._log(f"Sending Healthcheck (POST) to {final_url}...")
+                    requests.post(final_url, data=str(message).encode('utf-8'), timeout=10)
+                    self._log("Healthcheck ping successful.")
+                    return
+                except Exception as e:
+                    self._log(f"Healthcheck ping failed: {e}", "WARNING")
+                    return
+
+        # 2. Uptime Kuma (Push Monitor)
+        elif "/api/push/" in url:
+            # Uptime Kuma Push URL format: .../api/push/TOKEN?status=up&msg=OK&ping=
+            try:
+                parsed = urllib.parse.urlparse(url)
+                query = urllib.parse.parse_qs(parsed.query)
+                
+                if status == "success":
+                    query['status'] = ['up']
+                    query['msg'] = ['Backup Successful']
+                elif status == "failure":
+                    query['status'] = ['down']
+                    query['msg'] = [f'Backup Failed: {message}']
+                elif status == "start":
+                    # Optional: Uptime Kuma doesn't natively have "start" state like HC.io
+                    # We can send a message but keep status=up, or just skip to avoid "flapping"
+                    # Let's send a ping with "Backup Started" message
+                    query['status'] = ['up']
+                    query['msg'] = ['Backup Process Started']
+                
+                # Update query string
+                new_query = urllib.parse.urlencode(query, doseq=True)
+                final_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
+                
+            except Exception as e:
+                self._log(f"Error parsing Uptime Kuma URL: {e}", "WARNING")
+                # Fallback to original URL
+                final_url = url
+
+        # --- Generic Request (GET) ---
         try:
-            self._log(f"Sending Healthcheck ping to {self.healthcheck_url}...")
-            # Uptime Kuma supports ?status=up&msg=OK&ping=... but simple GET is usually enough for Heartbeat
-            response = requests.get(self.healthcheck_url, timeout=10)
+            self._log(f"Sending Healthcheck (GET) to {final_url}...")
+            # Verify=False is often needed for self-hosted Uptime Kuma with self-signed certs
+            # We enable it by default but could catch SSLError
+            response = requests.get(final_url, timeout=10)
+            
             if response.status_code == 200:
                 self._log("Healthcheck ping successful.")
             else:
                 self._log(f"Healthcheck ping returned status code: {response.status_code}", "WARNING")
+        except requests.exceptions.SSLError:
+             self._log("SSL Error on Healthcheck. Retrying with verify=False...", "WARNING")
+             try:
+                 requests.get(final_url, timeout=10, verify=False)
+                 self._log("Healthcheck ping successful (verify=False).")
+             except Exception as e:
+                 self._log(f"Healthcheck ping failed (verify=False): {e}", "WARNING")
         except Exception as e:
             self._log(f"Healthcheck ping failed: {e}", "WARNING")
 
@@ -439,6 +506,9 @@ class BackupEngine:
         3. Compresses the entire file tree.
         4. Uploads to Cloud.
         """
+        # 0. Send "Start" Signal to Healthcheck
+        self._send_healthcheck("start")
+
         if not self.backup_password:
             self._log("ERROR: BACKUP_PASSWORD is not set!", "ERROR")
             if progress_callback:
@@ -545,7 +615,7 @@ class BackupEngine:
                     progress_callback(get_text(lang, "progress_upload_success"))
                 
                 # Send Healthcheck Ping
-                self._send_healthcheck()
+                self._send_healthcheck("success")
                 
                 # Send Gotify Notification
                 APIHandler().send_gotify_notification(

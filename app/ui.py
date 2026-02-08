@@ -14,7 +14,7 @@ from app.languages import get_text, TRANSLATIONS
 from app.security import encrypt_value, decrypt_value
 
 ENV_FILE = ".env"
-APP_VERSION = "v1.0.2"
+APP_VERSION = "v1.0.3"
 
 def get_env_path():
     """Determines the correct path for the .env file."""
