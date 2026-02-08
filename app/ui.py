@@ -480,6 +480,12 @@ def show_dashboard():
                 new_retention = st.number_input("Retention (Days)", value=int(os.getenv("RETENTION_DAYS", "7")), min_value=1, disabled=disabled)
                 new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
             
+            col_hb1, col_hb2 = st.columns(2)
+            with col_hb1:
+                 new_heartbeat_url = st.text_input(get_text(lang, "label_heartbeat_url"), value=os.getenv("HEARTBEAT_URL", ""), disabled=disabled, help=get_text(lang, "help_heartbeat_url"))
+            with col_hb2:
+                 new_heartbeat_interval = st.number_input(get_text(lang, "label_heartbeat_interval"), value=int(os.getenv("HEARTBEAT_INTERVAL", "0")), min_value=0, disabled=disabled, help=get_text(lang, "help_heartbeat_interval"))
+
             st.markdown("---")
             st.subheader(get_text(lang, "header_login"))
             col_w1, col_w2 = st.columns(2)
@@ -533,6 +539,8 @@ def show_dashboard():
                     "RETENTION_DAYS": new_retention,
                     "TZ": new_tz,
                     "HEALTHCHECK_URL": new_healthcheck_url,
+                    "HEARTBEAT_URL": new_heartbeat_url,
+                    "HEARTBEAT_INTERVAL": new_heartbeat_interval,
                     "WEB_UI_USERNAME": new_web_ui_username,
                     "WEB_UI_PASSWORD": new_web_ui_password
                 }
