@@ -13,7 +13,7 @@ from app.languages import get_text, TRANSLATIONS
 from app.security import encrypt_value, decrypt_value
 
 ENV_FILE = ".env"
-APP_VERSION = "v1.0.3"
+APP_VERSION = "v1.0.4"
 
 def get_env_path():
     """Determines the correct path for the .env file."""
@@ -145,7 +145,7 @@ def show_setup_wizard():
         st.info(get_text(lang, "info_portainer"))
         col1, col2 = st.columns(2)
         with col1:
-            portainer_url = st.text_input(f"{get_text(lang, 'label_portainer_url')} (Optional)", placeholder="http://portainer:9000")
+            portainer_url = st.text_input(f"{get_text(lang, 'label_portainer_url')} (Optional)", placeholder="https://portainerip:9443")
         with col2:
             portainer_token = st.text_input(f"{get_text(lang, 'label_portainer_token')} (Optional)", type="password", help=get_text(lang, 'help_portainer_token'))
 

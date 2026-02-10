@@ -321,6 +321,19 @@ class BackupEngine:
             if not api.download_portainer_backup(backup_path, password=self.backup_password):
                 self._log("Failed to download Portainer backup.", "ERROR")
                 return False
+            
+            # VALIDATION: Check if the downloaded file is a valid tar.gz archive
+            self._log("Validating downloaded archive integrity...")
+            # Using tar -tzf to list contents (tests integrity)
+            chk_cmd = ["tar", "-tzf", backup_path]
+            chk_result = subprocess.run(chk_cmd, capture_output=True, text=True)
+            
+            if chk_result.returncode != 0:
+                self._log(f"Archive integrity check failed! The downloaded file is corrupted.", "ERROR")
+                self._log(f"Tar Error: {chk_result.stderr}", "ERROR")
+                return False
+            
+            self._log("Archive integrity verified.")
                 
             # 2. Compress & Encrypt (7z)
             master_archive_name = f"Portainer_Backup_{timestamp}.7z"

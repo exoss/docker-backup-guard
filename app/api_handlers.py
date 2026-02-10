@@ -92,10 +92,30 @@ class APIHandler:
             response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
             response.raise_for_status()
             
+            # Check Content-Type to ensure we didn't get a JSON error or HTML page
+            content_type = response.headers.get("Content-Type", "").lower()
+            if "json" in content_type or "text" in content_type:
+                # If we can read the response safely, log it
+                try:
+                    error_msg = response.text[:500]
+                except:
+                    error_msg = "Could not read response text."
+                logger.error(f"Invalid Content-Type received: {content_type}. Response: {error_msg}")
+                return False
+
             # Write to file
             with open(output_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
+            
+            # Validate file size
+            file_size = os.path.getsize(output_path)
+            if file_size < 100:
+                logger.error(f"Downloaded file is too small ({file_size} bytes). Potentially invalid.")
+                # Read content to log potential error message
+                with open(output_path, 'r', errors='ignore') as f:
+                    logger.error(f"File content preview: {f.read(200)}")
+                return False
                     
             logger.info(f"Portainer backup downloaded successfully: {output_path}")
             return True
