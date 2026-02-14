@@ -40,6 +40,16 @@ This document outlines the planned development path for **Docker Backup Guard**.
     *   **Metadata:** Show file sizes and modification dates.
     *   **Management:** Allow deleting old or unnecessary backups from the cloud interface.
 
+### 5. 🔐 Portainer Backup Encryption Toggle
+**Priority: High**
+*   **Goal:** Make Portainer-side encryption optional via environment variable to avoid double encryption.
+*   **Config:** `PORTAINER_ENCRYPT=true|false` (default: `false`)
+*   **Behavior:**
+    *   When `false`: Do not send password to Portainer API; outer 7z uses `BACKUP_PASSWORD`.
+    *   When `true`: Send `BACKUP_PASSWORD` to Portainer API; outer 7z can remain enabled.
+*   **UI:** Add toggle to Settings with tooltip explaining trade-offs.
+*   **Migration:** Existing setups continue with single encryption by default.
+
 ---
 
 ## 🔮 Long-Term Vision (v2.0.0)

@@ -84,8 +84,6 @@ class APIHandler:
         # If password is None/Empty, it might return unencrypted or fail depending on version.
         # We'll use the provided password (usually system backup password) for security.
         payload = {}
-        if password:
-            payload["password"] = password
             
         try:
             logger.info(f"Requesting Portainer backup from {url}...")

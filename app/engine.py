@@ -315,7 +315,7 @@ class BackupEngine:
             self._log("Starting Standalone Portainer Backup...")
             
             # 1. Download Backup into temp directory without modification
-            backup_path = api.download_portainer_backup(temp_dir, password=self.backup_password)
+            backup_path = api.download_portainer_backup(temp_dir)
             if not backup_path:
                 self._log("Failed to download Portainer backup.", "ERROR")
                 return False
