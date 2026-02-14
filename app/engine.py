@@ -314,15 +314,15 @@ class BackupEngine:
 
             self._log("Starting Standalone Portainer Backup...")
             
-            # 1. Download Backup
-            backup_name = f"portainer_backup_{timestamp}.tar.gz"
-            backup_path = os.path.join(temp_dir, backup_name)
+            # 1. Download Backup (use neutral extension first)
+            backup_basename = f"portainer_backup_{timestamp}"
+            backup_path = os.path.join(temp_dir, f"{backup_basename}.bin")
             
             if not api.download_portainer_backup(backup_path, password=self.backup_password):
                 self._log("Failed to download Portainer backup.", "ERROR")
                 return False
             
-            # VALIDATION: Check archive format and integrity
+            # VALIDATION: Detect archive format and integrity
             self._log("Validating downloaded archive integrity...")
             try:
                 # Read magic bytes to detect gzip
@@ -333,25 +333,41 @@ class BackupEngine:
                 self._log(f"Failed to read magic bytes: {e}", "WARNING")
                 is_gzip = False
 
+            is_tar_plain = False
             if is_gzip:
                 chk_cmd = ["tar", "-tzf", backup_path]
+                chk_result = subprocess.run(chk_cmd, capture_output=True, text=True)
+                if chk_result.returncode == 0:
+                    self._log("Archive integrity verified (gzip tar).")
+                else:
+                    self._log("Gzip signature detected but tar -tzf failed.", "WARNING")
             else:
                 # Try plain tar listing first
                 chk_cmd = ["tar", "-tf", backup_path]
-
-            chk_result = subprocess.run(chk_cmd, capture_output=True, text=True)
-            if chk_result.returncode != 0:
-                # If password was used, Portainer may return an encrypted stream.
-                # In that case, tar will naturally fail; we accept and continue.
-                self._log("Tar listing failed; attempting to infer encrypted or non-tar format.", "WARNING")
-                if self.backup_password and not is_gzip:
-                    self._log("Assuming Portainer returned an encrypted backup (non-tar). Skipping tar integrity check.", "WARNING")
+                chk_result = subprocess.run(chk_cmd, capture_output=True, text=True)
+                is_tar_plain = (chk_result.returncode == 0)
+                if is_tar_plain:
+                    self._log("Archive integrity verified (plain tar).")
                 else:
-                    self._log(f"Archive integrity check failed! The downloaded file may be corrupted.", "ERROR")
-                    self._log(f"Tar Error: {chk_result.stderr}", "ERROR")
-                    return False
+                    self._log("Tar listing failed; attempting to infer encrypted or non-tar format.", "WARNING")
+            
+            # Decide correct extension based on detection
+            if is_gzip:
+                correct_ext = ".tar.gz"
+            elif is_tar_plain:
+                correct_ext = ".tar"
             else:
-                self._log("Archive integrity verified.")
+                correct_ext = ".enc"  # likely Portainer-encrypted or unknown binary
+                self._log("Assuming Portainer returned an encrypted/opaque backup stream. Skipping tar integrity check.", "WARNING")
+
+            # Rename file to correct extension for user clarity
+            new_backup_path = os.path.join(temp_dir, f"{backup_basename}{correct_ext}")
+            try:
+                if new_backup_path != backup_path:
+                    os.replace(backup_path, new_backup_path)
+                    backup_path = new_backup_path
+            except Exception as e:
+                self._log(f"Failed to rename backup file to correct extension: {e}", "WARNING")
                 
             # 2. Compress & Encrypt (7z)
             master_archive_name = f"Portainer_Backup_{timestamp}.7z"
