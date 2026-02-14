@@ -45,6 +45,8 @@ services:
       - ./.env:/app/.env
       # Backup storage (Mapped to ./backups on host)
       - ./backups:/backups
+      # Logs persistence
+      - ./logs:/app/logs
       # Rclone configuration (Directly mounted as file)
       - ./config/rclone/rclone.conf:/app/rclone.conf
       # Read-only access to Docker volumes for smart detection

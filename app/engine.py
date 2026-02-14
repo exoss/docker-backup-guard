@@ -558,7 +558,21 @@ class BackupEngine:
         # Let's run it always as it's quick and useful context.
         if progress_callback:
             progress_callback(get_text(lang, "progress_backup_portainer"))
-        self.perform_portainer_backup()
+        
+        if not self.perform_portainer_backup():
+            msg = "Portainer Backup Failed! Check logs for details."
+            self._log(msg, "ERROR")
+            if progress_callback:
+                progress_callback(f"⚠️ {msg}")
+            # We don't abort the whole backup, but we notify.
+            # return False # Uncomment if Portainer backup is critical for success:
+            msg = "Portainer Backup Failed! Check logs for details."
+            self._log(msg, "ERROR")
+            if progress_callback:
+                progress_callback(f"⚠️ {msg}")
+            # We don't abort the whole backup, but we notify.
+            # return False # Uncomment if Portainer backup is critical for success
+
 
         # Step 2: Grouping & Snapshot
         groups = self._group_containers(candidates)

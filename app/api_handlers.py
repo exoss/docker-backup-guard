@@ -90,10 +90,17 @@ class APIHandler:
             logger.info(f"Requesting Portainer backup from {url}...")
             # verify=False is used because local Portainer often has self-signed certs
             response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
+            
+            # Log status code and headers for debugging
+            logger.info(f"Portainer Backup Response Status: {response.status_code}")
+            logger.debug(f"Response Headers: {response.headers}")
+
             response.raise_for_status()
             
             # Check Content-Type to ensure we didn't get a JSON error or HTML page
             content_type = response.headers.get("Content-Type", "").lower()
+            logger.info(f"Received Content-Type: {content_type}")
+
             if "json" in content_type or "text" in content_type:
                 # If we can read the response safely, log it
                 try:
