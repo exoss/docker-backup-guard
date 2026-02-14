@@ -94,6 +94,11 @@ class APIHandler:
             # Log status code and headers for debugging
             logger.info(f"Portainer Backup Response Status: {response.status_code}")
             logger.debug(f"Response Headers: {response.headers}")
+            try:
+                logger.info(f"Content-Disposition: {response.headers.get('Content-Disposition')}")
+                logger.info(f"Content-Length: {response.headers.get('Content-Length')}")
+            except Exception:
+                pass
 
             response.raise_for_status()
             

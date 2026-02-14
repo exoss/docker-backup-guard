@@ -322,18 +322,36 @@ class BackupEngine:
                 self._log("Failed to download Portainer backup.", "ERROR")
                 return False
             
-            # VALIDATION: Check if the downloaded file is a valid tar.gz archive
+            # VALIDATION: Check archive format and integrity
             self._log("Validating downloaded archive integrity...")
-            # Using tar -tzf to list contents (tests integrity)
-            chk_cmd = ["tar", "-tzf", backup_path]
+            try:
+                # Read magic bytes to detect gzip
+                with open(backup_path, "rb") as f:
+                    magic = f.read(2)
+                is_gzip = magic == b"\x1f\x8b"
+            except Exception as e:
+                self._log(f"Failed to read magic bytes: {e}", "WARNING")
+                is_gzip = False
+
+            if is_gzip:
+                chk_cmd = ["tar", "-tzf", backup_path]
+            else:
+                # Try plain tar listing first
+                chk_cmd = ["tar", "-tf", backup_path]
+
             chk_result = subprocess.run(chk_cmd, capture_output=True, text=True)
-            
             if chk_result.returncode != 0:
-                self._log(f"Archive integrity check failed! The downloaded file is corrupted.", "ERROR")
-                self._log(f"Tar Error: {chk_result.stderr}", "ERROR")
-                return False
-            
-            self._log("Archive integrity verified.")
+                # If password was used, Portainer may return an encrypted stream.
+                # In that case, tar will naturally fail; we accept and continue.
+                self._log("Tar listing failed; attempting to infer encrypted or non-tar format.", "WARNING")
+                if self.backup_password and not is_gzip:
+                    self._log("Assuming Portainer returned an encrypted backup (non-tar). Skipping tar integrity check.", "WARNING")
+                else:
+                    self._log(f"Archive integrity check failed! The downloaded file may be corrupted.", "ERROR")
+                    self._log(f"Tar Error: {chk_result.stderr}", "ERROR")
+                    return False
+            else:
+                self._log("Archive integrity verified.")
                 
             # 2. Compress & Encrypt (7z)
             master_archive_name = f"Portainer_Backup_{timestamp}.7z"
@@ -560,12 +578,6 @@ class BackupEngine:
             progress_callback(get_text(lang, "progress_backup_portainer"))
         
         if not self.perform_portainer_backup():
-            msg = "Portainer Backup Failed! Check logs for details."
-            self._log(msg, "ERROR")
-            if progress_callback:
-                progress_callback(f"⚠️ {msg}")
-            # We don't abort the whole backup, but we notify.
-            # return False # Uncomment if Portainer backup is critical for success:
             msg = "Portainer Backup Failed! Check logs for details."
             self._log(msg, "ERROR")
             if progress_callback:
