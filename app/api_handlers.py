@@ -113,31 +113,48 @@ class APIHandler:
                 except:
                     error_msg = "Could not read response text."
                 logger.error(f"Invalid Content-Type received: {content_type}. Response: {error_msg}")
-                return False
+                return None
+            
+            save_path = output_path
+            try:
+                if os.path.isdir(output_path):
+                    disposition = response.headers.get("Content-Disposition") or ""
+                    suggested = None
+                    if "filename=" in disposition:
+                        suggested = disposition.split("filename=", 1)[1].strip().strip('\";\\' + \" \")
+                    if not suggested:
+                        if \"gzip\" in content_type:
+                            suggested = \"portainer_backup.tar.gz\"
+                        elif \"x-tar\" in content_type:
+                            suggested = \"portainer_backup.tar\"
+                        else:
+                            suggested = \"portainer_backup.bin\"
+                    save_path = os.path.join(output_path, suggested)
+            except Exception:
+                pass
 
-            # Write to file
-            with open(output_path, 'wb') as f:
+            with open(save_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             
-            # Validate file size
-            file_size = os.path.getsize(output_path)
+            file_size = os.path.getsize(save_path)
             if file_size < 100:
-                logger.error(f"Downloaded file is too small ({file_size} bytes). Potentially invalid.")
-                # Read content to log potential error message
-                with open(output_path, 'r', errors='ignore') as f:
-                    logger.error(f"File content preview: {f.read(200)}")
-                return False
+                try:
+                    with open(save_path, 'r', errors='ignore') as f:
+                        logger.error(f\"Downloaded file is too small. Preview: {f.read(200)}\")
+                except Exception:
+                    pass
+                return None
                     
-            logger.info(f"Portainer backup downloaded successfully: {output_path}")
-            return True
+            logger.info(f\"Portainer backup downloaded successfully: {save_path}\")
+            return save_path
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Portainer API Backup error: {e}")
             # Try to log response text if available for debugging
             if hasattr(e, 'response') and e.response:
                 logger.error(f"API Response: {e.response.text}")
-            return False
+            return None
 
     def get_portainer_backup(self):
         """Fetches stack/container info via Portainer API (Not for backup, informational)."""
