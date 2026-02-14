@@ -3,6 +3,7 @@ import requests
 import os
 import logging
 import urllib3
+import re
 from dotenv import load_dotenv
 from app.security import decrypt_value
 
@@ -120,15 +121,16 @@ class APIHandler:
                 if os.path.isdir(output_path):
                     disposition = response.headers.get("Content-Disposition") or ""
                     suggested = None
-                    if "filename=" in disposition:
-                        suggested = disposition.split("filename=", 1)[1].strip().strip('\";\\' + \" \")
+                    m = re.search(r'filename\\*?=(?:"?)([^";]+)', disposition, flags=re.IGNORECASE)
+                    if m:
+                        suggested = os.path.basename(m.group(1).strip())
                     if not suggested:
-                        if \"gzip\" in content_type:
-                            suggested = \"portainer_backup.tar.gz\"
-                        elif \"x-tar\" in content_type:
-                            suggested = \"portainer_backup.tar\"
+                        if "gzip" in content_type:
+                            suggested = "portainer_backup.tar.gz"
+                        elif "x-tar" in content_type:
+                            suggested = "portainer_backup.tar"
                         else:
-                            suggested = \"portainer_backup.bin\"
+                            suggested = "portainer_backup.bin"
                     save_path = os.path.join(output_path, suggested)
             except Exception:
                 pass
@@ -141,12 +143,12 @@ class APIHandler:
             if file_size < 100:
                 try:
                     with open(save_path, 'r', errors='ignore') as f:
-                        logger.error(f\"Downloaded file is too small. Preview: {f.read(200)}\")
+                        logger.error(f"Downloaded file is too small. Preview: {f.read(200)}")
                 except Exception:
                     pass
                 return None
                     
-            logger.info(f\"Portainer backup downloaded successfully: {save_path}\")
+            logger.info(f"Portainer backup downloaded successfully: {save_path}")
             return save_path
             
         except requests.exceptions.RequestException as e:
