@@ -69,6 +69,7 @@ def scheduler_loop():
     current_schedule_time = ""
     current_heartbeat_interval = 0
     current_heartbeat_url = ""
+    last_env_mtime = 0
     
     # Initial load delay
     time.sleep(2)
@@ -78,7 +79,16 @@ def scheduler_loop():
             # 1. Reload Configuration
             # Handle Docker volume mount edge case where .env might be a dir
             env_path = ".env/config.env" if os.path.isdir(".env") else ".env"
-            load_dotenv(dotenv_path=env_path, override=True)
+
+            # Check modification time to avoid redundant reloads
+            try:
+                mtime = os.stat(env_path).st_mtime
+            except FileNotFoundError:
+                mtime = 0
+
+            if mtime != last_env_mtime:
+                load_dotenv(dotenv_path=env_path, override=True)
+                last_env_mtime = mtime
             
             # 2. Read Backup Settings
             enabled = os.getenv("SCHEDULE_ENABLE", "false").lower() == "true"
