@@ -156,15 +156,6 @@ class APIHandler:
                 logger.error(f"API Response: {e.response.text}")
             return None
 
-    def get_portainer_backup(self):
-        """Fetches stack/container info via Portainer API (Not for backup, informational)."""
-        # Note: Portainer API structure may vary by version. Here we perform a basic connection test.
-        if not self.portainer_url or not self.portainer_token:
-            # Silent return as Portainer is optional now
-            return None
-
-        return APIHandler.test_portainer_connection(self.portainer_url, self.portainer_token)
-
     @staticmethod
     def test_portainer_connection(url, token):
         """Tests connectivity to Portainer API using provided credentials."""
