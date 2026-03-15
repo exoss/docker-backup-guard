@@ -67,7 +67,7 @@ class BackupEngine:
         if not self.healthcheck_url:
             return
 
-        url = self.healthcheck_url.strip()
+        url = self.healthcheck_url.strip().rstrip("/")
         final_url = url
         
         # --- Service Detection & URL Construction ---
