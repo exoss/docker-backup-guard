@@ -54,7 +54,7 @@ class APIHandler:
 
         try:
             # Simple logic to append /fail to the URL (HC.io standard)
-            url = self.healthcheck_url
+            url = self.healthcheck_url.rstrip("/")
             if status == "fail":
                 url = f"{url}/fail"
             
