@@ -6,9 +6,7 @@ import urllib3
 import re
 from dotenv import load_dotenv
 from app.security import decrypt_value
-
-# Suppress InsecureRequestWarning for local self-signed certs
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import warnings
 
 # Logging settings
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -88,7 +86,9 @@ class APIHandler:
         try:
             logger.info(f"Requesting Portainer backup from {url}...")
             # verify=False is used because local Portainer often has self-signed certs
-            response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
+                response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
             
             # Log status code and headers for debugging
             logger.info(f"Portainer Backup Response Status: {response.status_code}")
@@ -178,7 +178,9 @@ class APIHandler:
             # Fetch endpoints list as a test
             api_url = f"{base_url}/api/endpoints"
             # verify=False is used because local Portainer often has self-signed certs
-            response = requests.get(api_url, headers=headers, timeout=5, verify=False)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
+                response = requests.get(api_url, headers=headers, timeout=5, verify=False)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
