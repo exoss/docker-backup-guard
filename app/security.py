@@ -12,8 +12,9 @@ def _get_key():
         try:
             with open(KEY_FILE, "rb") as f:
                 return f.read()
-        except Exception:
-            pass # Fallback to generating new if unreadable (will break existing secrets)
+        except Exception as e:
+            print(f"Error reading encryption key from {KEY_FILE}: {e}")
+            raise RuntimeError(f"Failed to read existing encryption key: {e}")
     
     # Generate new key
     key = Fernet.generate_key()
