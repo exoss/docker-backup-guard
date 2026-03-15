@@ -4,7 +4,6 @@ import os
 import time
 import json
 import secrets
-import shutil
 import re
 from dotenv import load_dotenv
 from app import engine
