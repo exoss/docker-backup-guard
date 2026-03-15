@@ -10,6 +10,8 @@ import requests
 import urllib.parse
 from datetime import datetime
 from dotenv import load_dotenv
+import urllib3
+import warnings
 from app.api_handlers import APIHandler
 from app.languages import get_text
 from app.security import decrypt_value
@@ -134,7 +136,9 @@ class BackupEngine:
         except requests.exceptions.SSLError:
              self._log("SSL Error on Healthcheck. Retrying with verify=False...", "WARNING")
              try:
-                 requests.get(final_url, timeout=10, verify=False)
+                 with warnings.catch_warnings():
+                     warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
+                     requests.get(final_url, timeout=10, verify=False)
                  self._log("Healthcheck ping successful (verify=False).")
              except Exception as e:
                  self._log(f"Healthcheck ping failed (verify=False): {e}", "WARNING")

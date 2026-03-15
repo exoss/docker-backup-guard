@@ -4,6 +4,8 @@ import os
 import logging
 import requests
 import urllib.parse
+import urllib3
+import warnings
 from dotenv import load_dotenv
 from app.engine import BackupEngine
 
@@ -56,7 +58,9 @@ def send_heartbeat(url):
              requests.get(final_url, timeout=10)
         except requests.exceptions.SSLError:
              # Retry with verify=False for self-hosted instances
-             requests.get(final_url, timeout=10, verify=False)
+             with warnings.catch_warnings():
+                 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
+                 requests.get(final_url, timeout=10, verify=False)
              
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
