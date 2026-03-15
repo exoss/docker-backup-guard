@@ -54,6 +54,34 @@ class BackupEngine:
             
         self.logger = logging.getLogger("BackupEngine")
 
+    def _get_rclone_target_path(self):
+        destination = (self.rclone_destination or "").strip()
+        destination = destination.lstrip("/")
+        if destination:
+            return f"{self.rclone_remote_name}:{destination}"
+        return f"{self.rclone_remote_name}:"
+
+    def _run_rclone(self, args, timeout=600):
+        if not os.path.exists(self.rclone_config):
+            self._log(f"Rclone configuration file not found: {self.rclone_config}", "WARNING")
+            return None
+
+        cmd = ["rclone", *args, "--config", self.rclone_config]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            if result.returncode != 0:
+                stderr = (result.stderr or "").strip()
+                stdout = (result.stdout or "").strip()
+                err_msg = stderr if stderr else stdout
+                self._log(f"Rclone Error: {err_msg}", "ERROR")
+            return result
+        except subprocess.TimeoutExpired:
+            self._log(f"Rclone command timed out: {' '.join(cmd)}", "ERROR")
+            return None
+        except Exception as e:
+            self._log(f"Exception during Rclone operation: {e}", "ERROR")
+            return None
+
     def _log(self, message, level="INFO"):
         """Simple logging function wrapper around logging module"""
         lvl = getattr(logging, level.upper(), logging.INFO)
@@ -265,37 +293,37 @@ class BackupEngine:
 
     def _rclone_sync(self, source_file):
         """Syncs encrypted file to cloud via Rclone (using subprocess)."""
-        if not os.path.exists(self.rclone_config):
-            self._log(f"Rclone configuration file not found: {self.rclone_config}", "WARNING")
+        target_path = self._get_rclone_target_path()
+        self._log(f"Starting Rclone sync: {source_file} -> {target_path}")
+        result = self._run_rclone(["copy", source_file, target_path], timeout=1800)
+        if not result or result.returncode != 0:
+            return False
+        self._log("Rclone sync successful.")
+        return True
+
+    def _cleanup_remote_backups(self, retention_days):
+        """Deletes remote backups older than retention_days using rclone."""
+        try:
+            retention_days = int(retention_days)
+        except Exception:
+            retention_days = 7
+
+        if retention_days <= 0:
+            self._log("Remote cleanup skipped (Retention is 0).")
+            return True
+
+        target_path = self._get_rclone_target_path()
+        self._log(f"Running remote cleanup (Retention: {retention_days} days) on {target_path}...")
+
+        delete_result = self._run_rclone(
+            ["delete", target_path, "--min-age", f"{retention_days}d", "--include", "*.7z"],
+            timeout=1800,
+        )
+        if not delete_result or delete_result.returncode != 0:
             return False
 
-        try:
-            # Use the configured remote name and destination
-            target_path = f"{self.rclone_remote_name}:{self.rclone_destination}"
-            
-            self._log(f"Starting Rclone sync: {source_file} -> {target_path}")
-            
-            # Using direct subprocess command instead of rclone-python wrapper
-            # to avoid 'flags' keyword argument errors and improve stability.
-            cmd = [
-                "rclone", "copy",
-                source_file,
-                target_path,
-                "--config", self.rclone_config
-            ]
-            
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                self._log(f"Rclone Error: {result.stderr}", "ERROR")
-                return False
-            
-            self._log("Rclone sync successful.")
-            return True
-            
-        except Exception as e:
-            self._log(f"Exception during Rclone operation: {e}", "ERROR")
-            return False
+        self._run_rclone(["rmdirs", target_path, "--leave-root"], timeout=600)
+        return True
 
     def perform_portainer_backup(self):
         """
@@ -350,6 +378,8 @@ class BackupEngine:
             
             if success:
                 self._log(f"Portainer Backup successful and uploaded: {master_archive_name}")
+                retention_days = os.getenv("RETENTION_DAYS", "7")
+                self._cleanup_remote_backups(retention_days)
                 # Cleanup local archive
                 try:
                     os.remove(master_archive_path)
@@ -651,6 +681,7 @@ class BackupEngine:
             
             retention_days = int(os.getenv("RETENTION_DAYS", "7"))
             self._cleanup_local_backups(retention_days)
+            self._cleanup_remote_backups(retention_days)
 
     def _cleanup_local_backups(self, retention_days):
         """Deletes local backups older than retention_days"""

@@ -20,6 +20,25 @@ This document outlines the planned development path for **Docker Backup Guard**.
 *   **Supported Platforms:** Telegram, Discord, Slack, Microsoft Teams, Email (SMTP), Pushover, and 50+ others.
 *   **UI Update:** Redesign the notification settings to allow selecting a provider and entering a unified configuration URL.
 
+### 3. 🧹 Backup Exclusions (Per-Volume/Path)
+**Priority: High**
+*   **Goal:** Allow excluding non-critical/heavy paths (e.g., AI models, caches) from backups to save time and space.
+*   **Config:**
+    *   Global: `config/excludes.json` and optional `BACKUP_EXCLUDES` for quick patterns.
+    *   Per-project/container: UI-managed list and Docker label `backup.exclude` (comma-separated glob patterns).
+    *   Pattern Syntax: Glob-style (`**`, `*`), applied relative to each source path; works for bind mounts and named volumes.
+*   **Engine:**
+    *   Replace `cp` with `rsync -a` and `--exclude` rules; add `--dry-run` for preview.
+    *   Install `rsync` in Docker image; keep performance-friendly defaults.
+    *   Log excluded counts and write summary to `backup_state.json`.
+*   **UI:**
+    *   “Exclusions” panel per project: list volumes, add/remove patterns, quick presets (e.g., OpenWebUI models, node_modules).
+    *   Preview button to simulate excludes and show estimated size/time impact.
+*   **Safety:**
+    *   Block patterns that exclude entire volumes; warn if >80% of files would be excluded.
+    *   Protect critical paths (Docker metadata, .env, compose labels).
+*   **Acceptance Criteria:** Users can define, preview, and persist exclusions; backups skip those paths; logs and state reflect exclusions.
+
 ---
 
 ## 🛠️ Mid-Term Goals (v1.2.0)
