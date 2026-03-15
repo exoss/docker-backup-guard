@@ -9,7 +9,7 @@ import re
 from dotenv import load_dotenv
 from app import engine
 from app import api_handlers
-from app.languages import get_text, TRANSLATIONS
+from app.languages import get_text
 from app.security import encrypt_value, decrypt_value
 
 ENV_FILE = ".env"
