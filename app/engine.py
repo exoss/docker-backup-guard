@@ -32,6 +32,8 @@ class BackupEngine:
         load_dotenv(dotenv_path=env_path)
         
         self.rclone_config = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
+        if os.path.isdir(self.rclone_config):
+            self.rclone_config = os.path.join(self.rclone_config, "rclone.conf")
         self.rclone_remote_name = os.getenv("RCLONE_REMOTE_NAME", "remote")
         self.rclone_destination = os.getenv("RCLONE_DESTINATION", "backups")
         
