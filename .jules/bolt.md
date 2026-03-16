@@ -1,0 +1,3 @@
+## 2024-03-16 - Avoid N+1 API Calls with docker-py Container Objects
+**Learning:** In the `docker` python library, accessing the `container.image` property on a `Container` object retrieved via `client.containers.list()` triggers a lazy-loading API call to fetch the image details. When iterating over many containers, this causes a severe N+1 API call performance bottleneck.
+**Action:** Always access pre-loaded image attributes directly via the container's attributes dictionary (e.g., `container.attrs.get('Config', {}).get('Image')` or `container.attrs.get('Image')`) instead of the lazy `container.image` property to avoid extra API requests.

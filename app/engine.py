@@ -257,10 +257,11 @@ class BackupEngine:
     def _is_portainer(self, container):
         """Checks if a container is Portainer based on image name."""
         try:
-            image_tags = container.image.tags
-            for tag in image_tags:
-                if "portainer/portainer" in tag:
-                    return True
+            # Prevent N+1 API calls by accessing image info from pre-loaded attributes
+            # instead of using container.image, which triggers a lazy-loading API call.
+            image_name = container.attrs.get('Config', {}).get('Image') or container.attrs.get('Image') or ""
+            if "portainer/portainer" in image_name:
+                return True
         except:
             pass
         # Fallback: check name

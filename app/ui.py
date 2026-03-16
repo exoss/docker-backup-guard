@@ -628,7 +628,8 @@ def show_dashboard():
                 with st.expander(f"📦 {container.name} ({container.short_id})"):
                     st.write(f"**{get_text(lang, 'label_status')}:** {container.status}")
                     try:
-                        image_tags = container.image.tags
+                        # Prevent N+1 API calls by getting image name from pre-loaded attributes
+                        image_tags = container.attrs.get('Config', {}).get('Image') or container.attrs.get('Image')
                     except Exception:
                         image_tags = get_text(lang, "unknown_permission_denied")
                     st.write(f"**{get_text(lang, 'label_image')}:** {image_tags}")
