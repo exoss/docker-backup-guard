@@ -690,12 +690,13 @@ class BackupEngine:
         now = time.time()
         cutoff = now - (retention_days * 86400)
         
-        for filename in os.listdir(self.backup_root):
-            file_path = os.path.join(self.backup_root, filename)
-            if os.path.isfile(file_path) and filename.endswith(".7z"):
-                if os.path.getmtime(file_path) < cutoff:
-                    self._log(f"Deleting old backup: {filename}")
-                    os.remove(file_path)
+        # Performance optimization: use os.scandir() instead of os.listdir() to avoid extra stat() calls
+        with os.scandir(self.backup_root) as it:
+            for entry in it:
+                if entry.is_file() and entry.name.endswith(".7z"):
+                    if entry.stat().st_mtime < cutoff:
+                        self._log(f"Deleting old backup: {entry.name}")
+                        os.remove(entry.path)
 
 if __name__ == "__main__":
     engine = BackupEngine()
