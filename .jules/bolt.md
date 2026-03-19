@@ -5,3 +5,7 @@
 ## 2024-05-24 - Optimize directory iteration with `os.scandir` over `os.listdir`
 **Learning:** Using `os.listdir` returns just a list of names, requiring subsequent `os.path.isfile`, `os.path.getmtime`, or `os.path.getsize` calls for each entry. These extra `stat()` system calls can cause noticeable performance overhead, especially in directories with many files like a backup storage path.
 **Action:** Always use `os.scandir()` instead of `os.listdir()` when iterating directories and checking file properties, as `os.scandir()` caches the `DirEntry` metadata (like file type and attributes), heavily reducing the number of `stat()` system calls.
+
+## 2024-11-06 - Avoid reading entire log files into memory
+**Learning:** In Python, reading the last N lines of a file using `f.readlines()[-N:]` reads the entire file content into memory. This causes massive memory overhead and CPU usage spikes when the log file (e.g., `logs/app.log`) grows over time because log rotation is not configured.
+**Action:** Use `collections.deque(f, maxlen=N)` to iterate over the file efficiently, which limits the memory usage to O(1) proportional to N, rather than O(M) proportional to the file size M.

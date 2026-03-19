@@ -4,6 +4,7 @@ import os
 import time
 import json
 import secrets
+import collections
 import re
 from dotenv import load_dotenv
 from app import engine
@@ -672,8 +673,8 @@ def show_dashboard():
         log_path = "logs/app.log"
         if os.path.exists(log_path):
             with open(log_path, "r") as f:
-                # Read last 200 lines
-                lines = f.readlines()[-200:]
+                # Read last 200 lines efficiently without loading entire file into memory
+                lines = collections.deque(f, maxlen=200)
                 log_content = "".join(lines)
             st.code(log_content, language="log")
         else:
