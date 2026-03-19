@@ -208,13 +208,12 @@ def show_setup_wizard():
         default_remote_name = "remote"
         
         # Check if rclone_path is a directory (Docker mount fix)
-        read_path = rclone_path
         if os.path.isdir(rclone_path):
-            read_path = os.path.join(rclone_path, "rclone.conf")
+            rclone_path = os.path.join(rclone_path, "rclone.conf")
 
-        if os.path.exists(read_path) and os.path.isfile(read_path):
+        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
             try:
-                with open(read_path, "r") as f:
+                with open(rclone_path, "r") as f:
                     existing_conf = f.read()
                 
                 # Auto-detect remote name from existing config
@@ -554,25 +553,17 @@ def show_dashboard():
         
         rclone_path = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
         
-        # Logic to handle if rclone_path is a directory (common Docker mistake)
+        # Check if rclone_path is a directory (Docker mount fix)
+        if os.path.isdir(rclone_path):
+            rclone_path = os.path.join(rclone_path, "rclone.conf")
+
         rclone_content = ""
-        if os.path.exists(rclone_path):
-            if os.path.isfile(rclone_path):
-                try:
-                    with open(rclone_path, "r") as f:
-                        rclone_content = f.read()
-                except Exception as e:
-                    st.error(f"Error reading rclone.conf: {e}")
-            elif os.path.isdir(rclone_path):
-                st.warning(f"⚠️ Path {rclone_path} is a directory. Checking for rclone.conf inside...")
-                possible_sub = os.path.join(rclone_path, "rclone.conf")
-                if os.path.exists(possible_sub):
-                    rclone_path = possible_sub
-                    try:
-                        with open(rclone_path, "r") as f:
-                            rclone_content = f.read()
-                    except Exception as e:
-                        st.error(f"Error reading sub-file: {e}")
+        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
+            try:
+                with open(rclone_path, "r") as f:
+                    rclone_content = f.read()
+            except Exception as e:
+                st.error(f"Error reading rclone.conf: {e}")
         else:
             st.info(get_text(lang, "info_rclone_not_found"))
         
