@@ -347,16 +347,12 @@ def show_dashboard():
     backup_engine = get_backup_engine()
 
     # Cache candidates with TTL (60 seconds)
-    @st.cache_data(ttl=60)
+    # Performance optimization: Use @st.cache_resource instead of @st.cache_data for Docker objects.
+    # st.cache_data uses pickle to serialize/deserialize objects on every read, which is extremely slow
+    # for complex objects with network client references and causes severe memory overhead.
+    # st.cache_resource stores the direct object reference without serialization.
+    @st.cache_resource(ttl=60)
     def get_cached_candidates():
-        # We need to access the underlying engine method
-        # But st.cache_data requires serializable output.
-        # Docker container objects might not be fully serializable or safe to cache directly 
-        # because they hold client references.
-        # Better approach: Cache the list of dicts with necessary info, 
-        # OR just cache the function result if we trust pickle.
-        # Docker container objects are complex. Let's try caching the result of get_backup_candidates directly first.
-        # If that fails, we might need a wrapper to return simple dicts.
         return backup_engine.get_backup_candidates()
 
     # Create Tabs
