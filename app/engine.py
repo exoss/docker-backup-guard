@@ -240,8 +240,9 @@ class BackupEngine:
                     continue
                     
                 # 2. Subdirectory match for critical system paths (e.g. /proc/cpuinfo, /dev/mem)
-                # We check if source starts with any critical path + "/"
-                if any(source.startswith(p + "/") for p in ["/proc", "/sys", "/dev", "/run"]):
+                # Performance optimization: str.startswith accepts a tuple of strings natively,
+                # which is evaluated in C and is significantly faster than any() with a generator.
+                if source.startswith(("/proc/", "/sys/", "/dev/", "/run/")):
                     self._log(f"Skipping system sub-path: {source} (Container: {container.name})", "WARNING")
                     continue
                 

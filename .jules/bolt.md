@@ -9,3 +9,8 @@
 ## 2024-11-06 - Avoid reading entire log files into memory
 **Learning:** In Python, reading the last N lines of a file using `f.readlines()[-N:]` reads the entire file content into memory. This causes massive memory overhead and CPU usage spikes when the log file (e.g., `logs/app.log`) grows over time because log rotation is not configured.
 **Action:** Use `collections.deque(f, maxlen=N)` to iterate over the file efficiently, which limits the memory usage to O(1) proportional to N, rather than O(M) proportional to the file size M.
+
+
+## 2025-02-28 - Use @st.cache_resource for Streamlit complex object caching
+**Learning:** Streamlit's `@st.cache_data` uses `pickle` to serialize and deserialize the returned objects on every read. When caching complex class instances with network clients (like Docker `Container` objects), this causes massive CPU/memory overhead and potential detached-client bugs upon unpickling.
+**Action:** Always use `@st.cache_resource` instead of `@st.cache_data` when caching un-serializable or complex objects like network clients, database connections, or Docker objects. It stores the direct memory reference without pickling overhead, significantly improving application responsiveness.
