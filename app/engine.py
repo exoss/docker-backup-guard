@@ -281,7 +281,9 @@ class BackupEngine:
         # Check if Portainer API is configured
         api_configured = os.getenv("PORTAINER_URL") and os.getenv("PORTAINER_TOKEN")
 
-        for container in self.client.containers.list():
+        # Performance optimization: use Docker API server-side filtering
+        # instead of fetching all containers and filtering client-side.
+        for container in self.client.containers.list(filters={"label": "backup.enable=true"}):
             # Check if it is Portainer
             if self._is_portainer(container):
                 if api_configured:
@@ -290,9 +292,7 @@ class BackupEngine:
                 else:
                     self._log(f"Detected Portainer container: {container.name}, but API credentials missing. Falling back to Stop/Copy backup.", "WARNING")
 
-            labels = container.labels
-            if labels.get("backup.enable") == "true":
-                candidates.append(container)
+            candidates.append(container)
         return candidates
 
     def _rclone_sync(self, source_file):
