@@ -18,3 +18,7 @@
 ## 2025-03-05 - Use server-side filtering in Docker Python client
 **Learning:** Calling `self.client.containers.list()` fetches the metadata and creates `Container` objects for ALL containers running on the Docker host, which causes massive overhead if you only need a subset based on a specific label. Filtering client-side is an anti-pattern.
 **Action:** Always use the Docker API's built-in server-side filtering (e.g., `self.client.containers.list(filters={"label": "backup.enable=true"})`) to reduce network payload size, memory usage, and object instantiation time significantly.
+
+## 2026-03-22 - Optimize Container Volume Exclusion Lookups
+**Learning:** Defining literal list or tuple instances inside loops or frequently called functions creates significant memory allocation and execution overhead in Python. Furthermore, checking membership (`in`) against a `list` is an O(N) operation which gets expensive inside tight loops.
+**Action:** Always extract invariant collections to class-level or module-level constants. Convert `list` structures used purely for membership checks (`in`) into `frozenset` objects to leverage O(1) hashing lookups. Pass a pre-defined tuple to `str.startswith()` instead of constructing it dynamically.

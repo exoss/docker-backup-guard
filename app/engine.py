@@ -17,6 +17,17 @@ from app.languages import get_text
 from app.security import decrypt_value
 
 class BackupEngine:
+    # Define excluded system paths that should NEVER be backed up
+    # Using frozenset for O(1) lookup
+    EXCLUDED_PATHS = frozenset([
+        "/", "/proc", "/sys", "/dev", "/run", "/tmp",
+        "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
+        "/var/run/docker.sock"
+    ])
+
+    # Critical sub-paths as a constant tuple for optimized .startswith() checks
+    CRITICAL_SUB_PATHS = ("/proc/", "/sys/", "/dev/", "/run/")
+
     def __init__(self):
         try:
             self.client = docker.from_env()
@@ -221,13 +232,7 @@ class BackupEngine:
     def get_container_volumes(self, container):
         """Finds container volume and bind mount paths (on Host), excluding system paths."""
         mounts = []
-        # Define excluded system paths that should NEVER be backed up
-        EXCLUDED_PATHS = [
-            "/", "/proc", "/sys", "/dev", "/run", "/tmp", 
-            "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
-            "/var/run/docker.sock"
-        ]
-        
+
         for mount in container.attrs['Mounts']:
             # Bind mounts and Volumes
             if mount['Type'] in ['bind', 'volume']:
@@ -235,14 +240,14 @@ class BackupEngine:
                 
                 # --- EXCLUSION LOGIC ---
                 # 1. Exact match exclusion
-                if source in EXCLUDED_PATHS:
+                if source in self.EXCLUDED_PATHS:
                     self._log(f"Skipping system path: {source} (Container: {container.name})", "WARNING")
                     continue
                     
                 # 2. Subdirectory match for critical system paths (e.g. /proc/cpuinfo, /dev/mem)
                 # Performance optimization: str.startswith accepts a tuple of strings natively,
                 # which is evaluated in C and is significantly faster than any() with a generator.
-                if source.startswith(("/proc/", "/sys/", "/dev/", "/run/")):
+                if source.startswith(self.CRITICAL_SUB_PATHS):
                     self._log(f"Skipping system sub-path: {source} (Container: {container.name})", "WARNING")
                     continue
                 
