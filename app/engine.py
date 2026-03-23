@@ -407,8 +407,11 @@ class BackupEngine:
         """Groups containers by Docker Compose Project."""
         groups = {}
         for container in candidates:
+            # Prevent N+1 API calls by accessing labels from pre-loaded attributes
+            # instead of using container.labels, which triggers a lazy-loading API call.
+            labels = container.attrs.get("Config", {}).get("Labels") or container.attrs.get("Labels") or {}
             # Check for com.docker.compose.project label
-            project = container.labels.get("com.docker.compose.project")
+            project = labels.get("com.docker.compose.project")
             if project:
                 if project not in groups:
                     groups[project] = []

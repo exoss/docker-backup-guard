@@ -18,3 +18,7 @@
 ## 2025-03-05 - Use server-side filtering in Docker Python client
 **Learning:** Calling `self.client.containers.list()` fetches the metadata and creates `Container` objects for ALL containers running on the Docker host, which causes massive overhead if you only need a subset based on a specific label. Filtering client-side is an anti-pattern.
 **Action:** Always use the Docker API's built-in server-side filtering (e.g., `self.client.containers.list(filters={"label": "backup.enable=true"})`) to reduce network payload size, memory usage, and object instantiation time significantly.
+
+## 2025-02-28 - Optimize N+1 API Calls in Docker Container Labels Access
+**Learning:** Accessing `container.labels` via the `docker-py` module triggers a lazy-loading API call to fetch full container details if they are not pre-populated. Iterating over containers and accessing `.labels` sequentially causes an N+1 API call issue, leading to severe performance degradation.
+**Action:** Instead of `container.labels`, retrieve the labels directly from the pre-loaded dictionary using `container.attrs.get("Config", {}).get("Labels") or container.attrs.get("Labels") or {}`. This eliminates the hidden API call entirely and provides immediate access using data already loaded in the initial container list query.
