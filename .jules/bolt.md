@@ -18,3 +18,7 @@
 ## 2025-03-05 - Use server-side filtering in Docker Python client
 **Learning:** Calling `self.client.containers.list()` fetches the metadata and creates `Container` objects for ALL containers running on the Docker host, which causes massive overhead if you only need a subset based on a specific label. Filtering client-side is an anti-pattern.
 **Action:** Always use the Docker API's built-in server-side filtering (e.g., `self.client.containers.list(filters={"label": "backup.enable=true"})`) to reduce network payload size, memory usage, and object instantiation time significantly.
+
+## 2025-03-09 - Avoid instantiating cryptography.fernet.Fernet repeatedly
+**Learning:** Instantiating `Fernet(key)` has a high constant CPU overhead because it performs cryptographic checks on the key. Repeatedly creating new `Fernet` instances in a loop or per-call function for the same static key introduces a significant performance bottleneck (e.g., during `.env` parsing or saving).
+**Action:** Extract the `Fernet` instantiation into a helper function and cache the `Fernet` instance itself using `@lru_cache(maxsize=1)`. This amortizes the initialization cost across multiple encryption/decryption calls.
