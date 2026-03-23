@@ -40,6 +40,7 @@ class BackupEngine:
         # Decrypt sensitive fields
         self.backup_password = decrypt_value(os.getenv("BACKUP_PASSWORD"))
         self.healthcheck_url = os.getenv("HEALTHCHECK_URL")
+        self.portainer_api_configured = bool(os.getenv("PORTAINER_URL") and os.getenv("PORTAINER_TOKEN"))
 
         # Setup Logging
         log_dir = "logs"
@@ -279,7 +280,7 @@ class BackupEngine:
         
         candidates = []
         # Check if Portainer API is configured
-        api_configured = os.getenv("PORTAINER_URL") and os.getenv("PORTAINER_TOKEN")
+        api_configured = self.portainer_api_configured
 
         # Performance optimization: use Docker API server-side filtering
         # instead of fetching all containers and filtering client-side.
