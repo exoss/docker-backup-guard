@@ -18,3 +18,6 @@
 ## 2025-03-05 - Use server-side filtering in Docker Python client
 **Learning:** Calling `self.client.containers.list()` fetches the metadata and creates `Container` objects for ALL containers running on the Docker host, which causes massive overhead if you only need a subset based on a specific label. Filtering client-side is an anti-pattern.
 **Action:** Always use the Docker API's built-in server-side filtering (e.g., `self.client.containers.list(filters={"label": "backup.enable=true"})`) to reduce network payload size, memory usage, and object instantiation time significantly.
+## 2024-05-24 - Bulk List Docker Containers
+**Learning:** `docker.client.containers.list` defaults to only returning running containers unless `all=True` is provided, which can mask bugs when optimizing bulk loads where non-running containers (e.g. paused, restarting, exited) must be captured.
+**Action:** Always include `all=True` when bulk loading states of a diverse group of containers from the Docker SDK, unless we strictly filter for running containers.

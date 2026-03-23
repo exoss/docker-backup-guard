@@ -442,17 +442,33 @@ class BackupEngine:
         
         # 1. Collect Unique Volume Paths
         unique_paths = set()
+
+        # Bulk fetch container states to avoid N+1 API calls during reload
+        container_ids = [c.id for c in containers]
+        fresh_containers = {}
+        if container_ids:
+            try:
+                # We use client.containers.list to efficiently fetch all fresh container states at once
+                fresh_containers = {c.id: c for c in self.client.containers.list(all=True, filters={"id": container_ids})}
+            except Exception as e:
+                self._log(f"Error bulk fetching containers: {e}", "WARNING")
+
         for container in containers:
             try:
-                # Reload container to get latest status/mounts
-                container.reload()
+                # Use fresh state if available, otherwise fallback to original object
+                fresh_c = fresh_containers.get(container.id, container)
+
+                # If we couldn't get a fresh state from bulk list, fallback to individual reload
+                if container.id not in fresh_containers:
+                    fresh_c.reload()
+
                 # Check if container is in a transition state (restarting, paused)
-                if container.status in ['restarting', 'paused', 'dead']:
-                     self._log(f"Container {container.name} is in '{container.status}' state. Waiting 10s...", "WARNING")
+                if fresh_c.status in ['restarting', 'paused', 'dead']:
+                     self._log(f"Container {fresh_c.name} is in '{fresh_c.status}' state. Waiting 10s...", "WARNING")
                      time.sleep(10)
-                     container.reload()
+                     fresh_c.reload()
                 
-                paths = self.get_container_volumes(container)
+                paths = self.get_container_volumes(fresh_c)
                 unique_paths.update(paths)
             except Exception as e:
                  self._log(f"Error inspecting container {container.name}: {e}", "ERROR")
