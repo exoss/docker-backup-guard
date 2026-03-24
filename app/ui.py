@@ -12,8 +12,10 @@ from app import api_handlers
 from app.languages import get_text
 from app.security import encrypt_value, decrypt_value
 
+# Constants
 ENV_FILE = ".env"
 APP_VERSION = "v1.1.0"
+SENSITIVE_KEYS = frozenset(["PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME"])
 
 def get_env_path():
     """Determines the correct path for the .env file."""
@@ -43,7 +45,6 @@ def save_env(updates):
     current_env.update(updates)
     
     # 3. Encrypt Sensitive Keys
-    SENSITIVE_KEYS = ["PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME"]
     for key in SENSITIVE_KEYS:
         if key in current_env:
             current_env[key] = encrypt_value(current_env[key])
