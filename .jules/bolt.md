@@ -21,3 +21,7 @@
 ## 2024-05-24 - Bulk List Docker Containers
 **Learning:** `docker.client.containers.list` defaults to only returning running containers unless `all=True` is provided, which can mask bugs when optimizing bulk loads where non-running containers (e.g. paused, restarting, exited) must be captured.
 **Action:** Always include `all=True` when bulk loading states of a diverse group of containers from the Docker SDK, unless we strictly filter for running containers.
+
+## 2024-05-24 - Parallelize Docker Container Start/Stop Operations
+**Learning:** Stopping and starting containers sequentially during a backup cycle causes unnecessary and prolonged service downtime, especially when a single compose project has multiple containers.
+**Action:** Use `concurrent.futures.ThreadPoolExecutor` to parallelize container start and stop operations. Always configure `max_workers` to balance performance and resource usage (e.g., `min(len(items), 10)`), and use `list(executor.map(...))` to ensure all tasks are consumed.
