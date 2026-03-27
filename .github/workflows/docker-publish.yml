@@ -29,16 +29,8 @@ jobs:
       - name: Downcase IMAGE_NAME for GHCR
         run: echo "GHCR_IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      # Multi-arch desteği için gerekli
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       # 1. GitHub Container Registry'ye Giriş
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY_GHCR }}
@@ -47,11 +39,18 @@ jobs:
 
       # 2. Docker Hub'a Giriş
       - name: Log in to Docker Hub
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Multi-arch desteği için gerekli
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       # Her iki registry için ortak etiketleri (tags) ve etiketleri (labels) çıkarır
       - name: Extract metadata (tags, labels) for Docker
