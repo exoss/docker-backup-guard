@@ -12,6 +12,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import urllib3
 import warnings
+import concurrent.futures
 from app.api_handlers import APIHandler
 from app.languages import get_text
 from app.security import decrypt_value
@@ -486,15 +487,20 @@ class BackupEngine:
             if progress_callback:
                 progress_callback(get_text(lang, "progress_stopping").format(group=group_name))
                 
-            for container in containers:
-                try:
-                    # Use retry logic for stopping
-                    self._retry_operation(container.stop, retries=3, delay=5)
-                    stopped_containers.append(container)
-                except Exception as e:
-                    self._log(f"Failed to stop {container.name} after retries: {e}", "WARNING")
-                    # If we can't stop it, should we proceed? 
-                    # For data safety, maybe yes (snapshot might be fuzzy), but better to warn.
+            if containers:
+                # ⚡ Bolt: Parallelized for performance. Stopping containers is an IO-bound API operation.
+                def _stop_container(container):
+                    try:
+                        # Use retry logic for stopping
+                        self._retry_operation(container.stop, retries=3, delay=5)
+                        return container
+                    except Exception as e:
+                        self._log(f"Failed to stop {container.name} after retries: {e}", "WARNING")
+                        return None
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(containers), 10)) as executor:
+                    results = list(executor.map(_stop_container, containers))
+                    stopped_containers = [c for c in results if c is not None]
 
             # 3. Copy Phase (Snapshot)
             for src in unique_paths:
@@ -544,12 +550,17 @@ class BackupEngine:
             if progress_callback:
                 progress_callback(get_text(lang, "progress_restarting").format(group=group_name))
                 
-            for container in stopped_containers:
-                try:
-                    # Use retry logic for starting
-                    self._retry_operation(container.start, retries=3, delay=5)
-                except Exception as e:
-                    self._log(f"Failed to start {container.name} after retries: {e}", "ERROR")
+            if stopped_containers:
+                # ⚡ Bolt: Parallelized for performance. Starting containers is an IO-bound API operation.
+                def _start_container(container):
+                    try:
+                        # Use retry logic for starting
+                        self._retry_operation(container.start, retries=3, delay=5)
+                    except Exception as e:
+                        self._log(f"Failed to start {container.name} after retries: {e}", "ERROR")
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(stopped_containers), 10)) as executor:
+                    list(executor.map(_start_container, stopped_containers))
 
     def perform_backup(self, container_id=None, progress_callback=None, lang="en"):
         """
