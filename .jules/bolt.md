@@ -21,3 +21,6 @@
 ## 2024-05-24 - Bulk List Docker Containers
 **Learning:** `docker.client.containers.list` defaults to only returning running containers unless `all=True` is provided, which can mask bugs when optimizing bulk loads where non-running containers (e.g. paused, restarting, exited) must be captured.
 **Action:** Always include `all=True` when bulk loading states of a diverse group of containers from the Docker SDK, unless we strictly filter for running containers.
+## 2025-03-05 - Parallelize I/O Bound Docker Operations
+**Learning:** Docker container `stop` and `start` operations are I/O bound and can take significant time (up to 10 seconds for graceful stops). Running these sequentially in a loop for a large stack creates a massive performance bottleneck during backup processes.
+**Action:** Use `concurrent.futures.ThreadPoolExecutor` to parallelize container state changes (like stop/start). Always ensure `max_workers` is bounded (e.g., `min(len(items), 10)`), check for empty lists before initializing the executor, and use `list(executor.map(...))` to preserve order and capture exceptions safely.
