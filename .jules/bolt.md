@@ -21,3 +21,7 @@
 ## 2024-05-24 - Bulk List Docker Containers
 **Learning:** `docker.client.containers.list` defaults to only returning running containers unless `all=True` is provided, which can mask bugs when optimizing bulk loads where non-running containers (e.g. paused, restarting, exited) must be captured.
 **Action:** Always include `all=True` when bulk loading states of a diverse group of containers from the Docker SDK, unless we strictly filter for running containers.
+
+## 2025-03-31 - Extract invariant lists to class-level frozensets
+**Learning:** In tight loops or frequently called functions, defining lists (like `['bind', 'volume']` or system exclusion paths) locally causes repeated memory allocation overhead on every iteration or function call. Furthermore, lists have O(n) lookup time for membership checks (`in`).
+**Action:** To eliminate memory allocation overhead and improve execution speed, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
