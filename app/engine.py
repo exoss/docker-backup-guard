@@ -220,24 +220,26 @@ class BackupEngine:
         clean_path = host_path.lstrip("/")
         return os.path.join("/hostfs", clean_path)
 
+    # Performance optimization: extract excluded paths to a module-level frozenset
+    # for O(1) membership lookups and to prevent repeated list allocations during iteration.
+    EXCLUDED_PATHS = frozenset([
+        "/", "/proc", "/sys", "/dev", "/run", "/tmp",
+        "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
+        "/var/run/docker.sock"
+    ])
+
     def get_container_volumes(self, container):
         """Finds container volume and bind mount paths (on Host), excluding system paths."""
         mounts = []
-        # Define excluded system paths that should NEVER be backed up
-        EXCLUDED_PATHS = [
-            "/", "/proc", "/sys", "/dev", "/run", "/tmp", 
-            "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
-            "/var/run/docker.sock"
-        ]
         
         for mount in container.attrs['Mounts']:
             # Bind mounts and Volumes
-            if mount['Type'] in ['bind', 'volume']:
+            if mount['Type'] in ('bind', 'volume'):
                 source = mount['Source']
                 
                 # --- EXCLUSION LOGIC ---
                 # 1. Exact match exclusion
-                if source in EXCLUDED_PATHS:
+                if source in self.EXCLUDED_PATHS:
                     self._log(f"Skipping system path: {source} (Container: {container.name})", "WARNING")
                     continue
                     
