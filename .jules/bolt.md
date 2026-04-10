@@ -25,3 +25,6 @@
 ## 2025-03-05 - Parallelize long-running independent I/O operations
 **Learning:** Docker container `stop` and `start` operations are I/O bound, and graceful exits can take up to 10 seconds per container. When backing up a group of containers, processing them sequentially adds unnecessary delays and significantly increases service downtime.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor` to parallelize independent I/O bound operations (like stopping/starting containers). Set `max_workers` to a sensible limit (e.g., `min(len(items), 10)`) and use `list(executor.map(...))` to ensure all tasks execute and exceptions are surfaced correctly.
+## 2025-03-05 - Avoid list allocation in hot loops and unnecessary function calls for encryption check
+**Learning:** `save_env` re-creates `SENSITIVE_KEYS` as a list on every invocation. Additionally, it calls `encrypt_value` indiscriminately for all sensitive keys present in the dictionary. While `encrypt_value` checks for the `"ENC("` prefix internally, calling the function itself still incurs overhead.
+**Action:** Move static lists of keys to the module level as a `tuple` to save memory allocation overhead. Include a fast pre-check `if not str(value).startswith("ENC("):` before making the function call to `encrypt_value` to skip redundant overhead.
