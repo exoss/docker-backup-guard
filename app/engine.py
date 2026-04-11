@@ -18,6 +18,14 @@ from app.languages import get_text
 from app.security import decrypt_value
 
 class BackupEngine:
+    # Performance optimization: extract invariant lists into class-level frozenset
+    # for O(1) membership lookups, eliminating array allocation overhead.
+    EXCLUDED_PATHS = frozenset([
+        "/", "/proc", "/sys", "/dev", "/run", "/tmp",
+        "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
+        "/var/run/docker.sock"
+    ])
+
     def __init__(self):
         try:
             self.client = docker.from_env()
@@ -223,21 +231,16 @@ class BackupEngine:
     def get_container_volumes(self, container):
         """Finds container volume and bind mount paths (on Host), excluding system paths."""
         mounts = []
-        # Define excluded system paths that should NEVER be backed up
-        EXCLUDED_PATHS = [
-            "/", "/proc", "/sys", "/dev", "/run", "/tmp", 
-            "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
-            "/var/run/docker.sock"
-        ]
         
         for mount in container.attrs['Mounts']:
             # Bind mounts and Volumes
-            if mount['Type'] in ['bind', 'volume']:
+            # Performance optimization: use immutable tuple for membership check
+            if mount['Type'] in ('bind', 'volume'):
                 source = mount['Source']
                 
                 # --- EXCLUSION LOGIC ---
-                # 1. Exact match exclusion
-                if source in EXCLUDED_PATHS:
+                # 1. Exact match exclusion against O(1) frozenset
+                if source in self.EXCLUDED_PATHS:
                     self._log(f"Skipping system path: {source} (Container: {container.name})", "WARNING")
                     continue
                     
@@ -465,7 +468,8 @@ class BackupEngine:
                     fresh_c.reload()
 
                 # Check if container is in a transition state (restarting, paused)
-                if fresh_c.status in ['restarting', 'paused', 'dead']:
+                # Performance optimization: use immutable tuple for membership check
+                if fresh_c.status in ('restarting', 'paused', 'dead'):
                      self._log(f"Container {fresh_c.name} is in '{fresh_c.status}' state. Waiting 10s...", "WARNING")
                      time.sleep(10)
                      fresh_c.reload()

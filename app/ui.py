@@ -15,6 +15,10 @@ from app.security import encrypt_value, decrypt_value
 ENV_FILE = ".env"
 APP_VERSION = "v1.1.0"
 
+# Performance optimization: extract sensitive keys to a module-level immutable tuple
+# to avoid array reallocation on every UI save operation.
+SENSITIVE_KEYS = ("PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME")
+
 def get_env_path():
     """Determines the correct path for the .env file."""
     # If .env is a directory (Docker mount issue), use a file inside it
@@ -43,7 +47,6 @@ def save_env(updates):
     current_env.update(updates)
     
     # 3. Encrypt Sensitive Keys
-    SENSITIVE_KEYS = ["PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME"]
     for key in SENSITIVE_KEYS:
         if key in current_env:
             current_env[key] = encrypt_value(current_env[key])
