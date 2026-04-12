@@ -25,3 +25,7 @@
 ## 2025-03-05 - Parallelize long-running independent I/O operations
 **Learning:** Docker container `stop` and `start` operations are I/O bound, and graceful exits can take up to 10 seconds per container. When backing up a group of containers, processing them sequentially adds unnecessary delays and significantly increases service downtime.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor` to parallelize independent I/O bound operations (like stopping/starting containers). Set `max_workers` to a sensible limit (e.g., `min(len(items), 10)`) and use `list(executor.map(...))` to ensure all tasks execute and exceptions are surfaced correctly.
+
+## 2024-05-30 - Extract invariant lists to module level
+**Learning:** In Python, defining a list (like `["a", "b", "c"]`) inside a function definition means that the list object is re-allocated in memory every single time that function is called. For frequently called functions or inner loops, this memory allocation overhead can become a significant bottleneck. Furthermore, if the list is only used for `x in my_list` membership checks, a list provides O(n) lookups.
+**Action:** Always extract invariant data structures (lists, tuples, dicts that do not change) out of function scopes and into module-level constants. If a collection is used purely for membership checks, define it as a `frozenset` at the module level to provide O(1) lookups and eliminate per-call allocation overhead.
