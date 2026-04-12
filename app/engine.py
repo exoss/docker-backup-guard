@@ -17,6 +17,14 @@ from app.api_handlers import APIHandler
 from app.languages import get_text
 from app.security import decrypt_value
 
+# Performance optimization: extract invariant lists into module-level constants.
+# Convert lists used purely for membership checks into frozenset objects for O(1) lookups.
+EXCLUDED_PATHS = frozenset([
+    "/", "/proc", "/sys", "/dev", "/run", "/tmp",
+    "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
+    "/var/run/docker.sock"
+])
+
 class BackupEngine:
     def __init__(self):
         try:
@@ -223,12 +231,6 @@ class BackupEngine:
     def get_container_volumes(self, container):
         """Finds container volume and bind mount paths (on Host), excluding system paths."""
         mounts = []
-        # Define excluded system paths that should NEVER be backed up
-        EXCLUDED_PATHS = [
-            "/", "/proc", "/sys", "/dev", "/run", "/tmp", 
-            "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
-            "/var/run/docker.sock"
-        ]
         
         for mount in container.attrs['Mounts']:
             # Bind mounts and Volumes
