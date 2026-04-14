@@ -25,3 +25,6 @@
 ## 2025-03-05 - Parallelize long-running independent I/O operations
 **Learning:** Docker container `stop` and `start` operations are I/O bound, and graceful exits can take up to 10 seconds per container. When backing up a group of containers, processing them sequentially adds unnecessary delays and significantly increases service downtime.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor` to parallelize independent I/O bound operations (like stopping/starting containers). Set `max_workers` to a sensible limit (e.g., `min(len(items), 10)`) and use `list(executor.map(...))` to ensure all tasks execute and exceptions are surfaced correctly.
+## 2026-04-14 - Optimize membership checks using frozenset and tuples
+**Learning:** Recreating lists inside loops or methods (like EXCLUDED_PATHS) causes memory allocation overhead. List membership checks are O(N), while frozenset is O(1). Short inline membership checks should use tuples instead of lists.
+**Action:** Use module-level `frozenset` for static exclusion lists to achieve O(1) lookups. Use immutable tuples `('a', 'b')` instead of lists `['a', 'b']` for short inline membership checks.
