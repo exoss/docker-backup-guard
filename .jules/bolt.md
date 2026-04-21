@@ -25,3 +25,6 @@
 ## 2024-03-24 - Extract invariant lists/tuples to module-level frozensets
 **Learning:** Lists defined within functions or methods for membership checks (e.g., `in ['a', 'b', 'c']`) cause unnecessary memory allocation and list instantiation on every function call. Furthermore, lists have O(n) lookup time.
 **Action:** To eliminate memory allocation overhead and improve execution speed in tight loops or frequently called functions, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
+## 2025-03-08 - Use module-level frozensets instead of inline lists in loops
+**Learning:** Initializing list literals inside of loops (like `mount['Type'] in ['bind', 'volume']`) forces Python to recreate the list object on every single iteration. Furthermore, list membership lookups are O(n). While peephole optimization can sometimes convert static literal lists to tuples, explicit optimization prevents reliance on compiler quirks.
+**Action:** Extract invariant lists (especially those used for membership checks) into module-level `frozenset` constants to avoid repetitive instantiation overhead and improve lookup performance from O(N) to O(1).

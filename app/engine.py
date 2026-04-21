@@ -25,6 +25,10 @@ EXCLUDED_PATHS = frozenset([
 ])
 TRANSITION_STATES = frozenset(['restarting', 'paused', 'dead'])
 
+# Performance optimization: Extract invariant list into a module-level frozenset
+# to avoid O(N) list instantiation overhead on every loop iteration, providing O(1) lookup.
+VALID_MOUNT_TYPES = frozenset(['bind', 'volume'])
+
 class BackupEngine:
     def __init__(self):
         try:
@@ -234,7 +238,7 @@ class BackupEngine:
         
         for mount in container.attrs['Mounts']:
             # Bind mounts and Volumes
-            if mount['Type'] in ['bind', 'volume']:
+            if mount['Type'] in VALID_MOUNT_TYPES:
                 source = mount['Source']
                 
                 # --- EXCLUSION LOGIC ---
