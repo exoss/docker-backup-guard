@@ -12,6 +12,7 @@ from app import api_handlers
 from app.languages import get_text
 from app.security import encrypt_value, decrypt_value
 
+# Constants
 ENV_FILE = ".env"
 APP_VERSION = "v1.1.0"
 SENSITIVE_KEYS = ("PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME")

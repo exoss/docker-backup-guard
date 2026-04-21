@@ -22,10 +22,6 @@
 **Learning:** `docker.client.containers.list` defaults to only returning running containers unless `all=True` is provided, which can mask bugs when optimizing bulk loads where non-running containers (e.g. paused, restarting, exited) must be captured.
 **Action:** Always include `all=True` when bulk loading states of a diverse group of containers from the Docker SDK, unless we strictly filter for running containers.
 
-## 2025-03-05 - Parallelize long-running independent I/O operations
-**Learning:** Docker container `stop` and `start` operations are I/O bound, and graceful exits can take up to 10 seconds per container. When backing up a group of containers, processing them sequentially adds unnecessary delays and significantly increases service downtime.
-**Action:** Use `concurrent.futures.ThreadPoolExecutor` to parallelize independent I/O bound operations (like stopping/starting containers). Set `max_workers` to a sensible limit (e.g., `min(len(items), 10)`) and use `list(executor.map(...))` to ensure all tasks execute and exceptions are surfaced correctly.
-
-## 2025-03-08 - Optimize short inline membership lists into immutable module-level tuples
-**Learning:** Defining lists inside frequently called functions (like SENSITIVE_KEYS in save_env) causes memory allocation overhead on every call. In addition, calling functions when conditions could be checked beforehand adds unnecessary overhead.
-**Action:** Extract invariant lists into module-level immutable tuples and perform early checks (like checking for the 'ENC(' prefix) before calling expensive functions to eliminate overhead.
+## 2024-03-24 - Extract invariant lists/tuples to module-level frozensets
+**Learning:** Lists defined within functions or methods for membership checks (e.g., `in ['a', 'b', 'c']`) cause unnecessary memory allocation and list instantiation on every function call. Furthermore, lists have O(n) lookup time.
+**Action:** To eliminate memory allocation overhead and improve execution speed in tight loops or frequently called functions, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
