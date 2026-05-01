@@ -452,8 +452,16 @@ class BackupEngine:
         fresh_containers = {}
         if container_ids:
             try:
-                # We use client.containers.list to efficiently fetch all fresh container states at once
-                fresh_containers = {c.id: c for c in self.client.containers.list(all=True, filters={"id": container_ids})}
+                # Performance optimization: Chunk container IDs to prevent Docker API URI length limits
+                # which would cause the bulk fetch to fail and fallback to N+1 reload() calls.
+                chunk_size = 30
+                temp_containers = {}
+                for i in range(0, len(container_ids), chunk_size):
+                    chunk = container_ids[i:i + chunk_size]
+                    # We use client.containers.list to efficiently fetch all fresh container states at once
+                    chunk_results = {c.id: c for c in self.client.containers.list(all=True, filters={"id": chunk})}
+                    temp_containers.update(chunk_results)
+                fresh_containers = temp_containers
             except Exception as e:
                 self._log(f"Error bulk fetching containers: {e}", "WARNING")
 
