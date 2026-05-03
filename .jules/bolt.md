@@ -25,3 +25,7 @@
 ## 2024-03-24 - Extract invariant lists/tuples to module-level frozensets
 **Learning:** Lists defined within functions or methods for membership checks (e.g., `in ['a', 'b', 'c']`) cause unnecessary memory allocation and list instantiation on every function call. Furthermore, lists have O(n) lookup time.
 **Action:** To eliminate memory allocation overhead and improve execution speed in tight loops or frequently called functions, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
+
+## 2025-05-24 - Chunking Bulk Docker Container State Fetches
+**Learning:** Fetching container states in bulk using `client.containers.list(all=True, filters={"id": container_ids})` fails or degrades significantly when `container_ids` contains a large number of IDs due to Docker API URI length limitations. This forces the system to fallback to slow, individual `container.reload()` calls (N+1 API calls), severely impacting backup performance.
+**Action:** Always chunk the list of container IDs (e.g., into batches of 30) when bulk fetching container states and accumulate the results in a temporary dictionary. This avoids URI length limits while maintaining the performance benefits of bulk API calls, and ensures partial state updates are prevented during exceptions.
