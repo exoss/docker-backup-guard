@@ -265,7 +265,7 @@ class BackupEngine:
         """Checks if a container is Portainer based on image name."""
         try:
             # Prevent N+1 API calls by accessing image info from pre-loaded attributes
-            # instead of using container.image, which triggers a lazy-loading API call.
+            # instead of using container.image.tags, which triggers a lazy-loading API call.
             image_name = container.attrs.get('Config', {}).get('Image') or container.attrs.get('Image') or ""
             if "portainer/portainer" in image_name:
                 return True
@@ -452,8 +452,20 @@ class BackupEngine:
         fresh_containers = {}
         if container_ids:
             try:
-                # We use client.containers.list to efficiently fetch all fresh container states at once
-                fresh_containers = {c.id: c for c in self.client.containers.list(all=True, filters={"id": container_ids})}
+                # Performance optimization: Chunk container IDs (e.g. 30 per call) to avoid Docker API
+                # URI length limits. If limits are exceeded, the entire bulk request fails and falls
+                # back to the very slow N+1 reload() pattern. We use a temporary dictionary to ensure
+                # atomic assignment, preventing partial state updates if a chunk fails.
+                chunk_size = 30
+                temp_containers = {}
+                for i in range(0, len(container_ids), chunk_size):
+                    chunk = container_ids[i:i + chunk_size]
+                    chunk_res = self.client.containers.list(all=True, filters={"id": chunk})
+                    for c in chunk_res:
+                        temp_containers[c.id] = c
+
+                # Atomically assign complete results
+                fresh_containers = temp_containers
             except Exception as e:
                 self._log(f"Error bulk fetching containers: {e}", "WARNING")
 
