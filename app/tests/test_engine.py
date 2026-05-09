@@ -19,32 +19,32 @@ def engine():
 
 def test_is_portainer_by_tag(engine):
     container = MagicMock()
-    container.image.tags = ["portainer/portainer:latest"]
+    container.attrs = {'Config': {'Image': 'portainer/portainer:latest'}}
     container.name = "some_random_name"
     assert engine._is_portainer(container) is True
 
 def test_is_portainer_by_tag_ce(engine):
     container = MagicMock()
-    container.image.tags = ["portainer/portainer-ce:2.19.4"]
+    container.attrs = {'Config': {'Image': 'portainer/portainer-ce:2.19.4'}}
     container.name = "some_random_name"
     assert engine._is_portainer(container) is True
 
 def test_is_portainer_by_name(engine):
     container = MagicMock()
     # Mocking empty tags or exception
-    del container.image.tags
+    container.attrs = {}
     container.name = "my_portainer_instance"
     assert engine._is_portainer(container) is True
 
 def test_is_portainer_by_name_uppercase(engine):
     container = MagicMock()
-    del container.image.tags
+    container.attrs = {}
     container.name = "PORTAINER"
     assert engine._is_portainer(container) is True
 
 def test_is_not_portainer(engine):
     container = MagicMock()
-    container.image.tags = ["nginx:latest"]
+    container.attrs = {'Config': {'Image': 'nginx:latest'}}
     container.name = "my_web_server"
     assert engine._is_portainer(container) is False
 
