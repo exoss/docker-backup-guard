@@ -25,3 +25,6 @@
 ## 2024-03-24 - Extract invariant lists/tuples to module-level frozensets
 **Learning:** Lists defined within functions or methods for membership checks (e.g., `in ['a', 'b', 'c']`) cause unnecessary memory allocation and list instantiation on every function call. Furthermore, lists have O(n) lookup time.
 **Action:** To eliminate memory allocation overhead and improve execution speed in tight loops or frequently called functions, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
+## 2025-03-05 - Avoid repetitive URL parsing in periodic tasks
+**Learning:** URL parsing using urllib.parse inside periodic background tasks (e.g., a heartbeat sent every minute) consumes unnecessary CPU cycles when the input parameters are static.
+**Action:** Always pre-calculate and cache static URLs or configuration parameters during the service setup or reload phase to minimize the overhead of recurring tasks.
