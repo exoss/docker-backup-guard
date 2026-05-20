@@ -27,40 +27,43 @@ def run_backup_job():
     engine = BackupEngine()
     engine.perform_backup()
 
+def _prepare_heartbeat_url(url):
+    """
+    Pre-calculates Uptime Kuma push monitor URLs to avoid redundant parsing.
+    """
+    final_url = url
+    if "/api/push/" in url:
+        try:
+            parsed = urllib.parse.urlparse(url)
+            query = urllib.parse.parse_qs(parsed.query)
+
+            # Set Status=Up and Msg=Idle
+            query['status'] = ['up']
+            query['msg'] = ['System Idle - Waiting for Schedule']
+
+            # Update query string
+            new_query = urllib.parse.urlencode(query, doseq=True)
+            final_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
+        except Exception:
+            # If parsing fails, use original URL
+            final_url = url
+    return final_url
+
 def send_heartbeat(url):
     """
     Sends a heartbeat ping to the specified URL.
     This runs independently of the backup job to signal 'System is Alive'.
     """
     try:
-        final_url = url
-        
-        # Uptime Kuma Push Logic
-        if "/api/push/" in url:
-             try:
-                 parsed = urllib.parse.urlparse(url)
-                 query = urllib.parse.parse_qs(parsed.query)
-                 
-                 # Set Status=Up and Msg=Idle
-                 query['status'] = ['up']
-                 query['msg'] = ['System Idle - Waiting for Schedule']
-                 
-                 # Update query string
-                 new_query = urllib.parse.urlencode(query, doseq=True)
-                 final_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
-             except Exception:
-                 # If parsing fails, use original URL
-                 final_url = url
-
         # Send Request (GET)
         # We use a short timeout (10s) to not block the scheduler for too long
         try:
-             requests.get(final_url, timeout=10)
+             requests.get(url, timeout=10)
         except requests.exceptions.SSLError:
              # Retry with verify=False for self-hosted instances
              with warnings.catch_warnings():
                  warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-                 requests.get(final_url, timeout=10, verify=False)
+                 requests.get(url, timeout=10, verify=False)
              
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
@@ -126,7 +129,8 @@ def scheduler_loop():
                 
                 # --- Setup Heartbeat Job ---
                 if hb_url and hb_interval > 0:
-                    schedule.every(hb_interval).minutes.do(send_heartbeat, url=hb_url)
+                    prepared_url = _prepare_heartbeat_url(hb_url)
+                    schedule.every(hb_interval).minutes.do(send_heartbeat, url=prepared_url)
                     logger.info(f"💓 Heartbeat Enabled: Every {hb_interval} minutes -> {hb_url}")
                 else:
                     if hb_url:
