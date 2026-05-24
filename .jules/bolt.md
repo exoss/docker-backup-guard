@@ -25,3 +25,7 @@
 ## 2024-03-24 - Extract invariant lists/tuples to module-level frozensets
 **Learning:** Lists defined within functions or methods for membership checks (e.g., `in ['a', 'b', 'c']`) cause unnecessary memory allocation and list instantiation on every function call. Furthermore, lists have O(n) lookup time.
 **Action:** To eliminate memory allocation overhead and improve execution speed in tight loops or frequently called functions, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
+
+## 2024-05-24 - Pre-calculating Heartbeat URLs
+**Learning:** In the heartbeat service, continuously parsing and updating the Uptime Kuma push monitor URLs on every heartbeat execution adds unnecessary CPU overhead.
+**Action:** Always move static string or URL modifications out of periodic or frequently executed jobs and pre-calculate them during the configuration setup phase, passing the optimized result directly to the job.
