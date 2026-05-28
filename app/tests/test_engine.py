@@ -19,12 +19,14 @@ def engine():
 
 def test_is_portainer_by_tag(engine):
     container = MagicMock()
+    container.attrs = {'Config': {'Image': 'portainer/portainer:latest'}}
     container.image.tags = ["portainer/portainer:latest"]
     container.name = "some_random_name"
     assert engine._is_portainer(container) is True
 
 def test_is_portainer_by_tag_ce(engine):
     container = MagicMock()
+    container.attrs = {'Config': {'Image': 'portainer/portainer-ce:2.19.4'}}
     container.image.tags = ["portainer/portainer-ce:2.19.4"]
     container.name = "some_random_name"
     assert engine._is_portainer(container) is True
