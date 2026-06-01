@@ -637,7 +637,14 @@ class BackupEngine:
             master_archive_path = os.path.join(self.backup_root, master_archive_name)
             
             # Check if temp dir has content
-            if not os.listdir(backup_tree_root):
+            # Performance optimization: use os.scandir() instead of os.listdir() for an O(1) emptiness check.
+            # os.listdir() fetches all entries into memory, causing a memory and CPU spike for large directories.
+            # os.scandir() allows stopping at the first item encountered, dramatically reducing overhead.
+            is_empty = True
+            with os.scandir(backup_tree_root) as it:
+                is_empty = not any(it)
+
+            if is_empty:
                 self._log("No data found in staging directory. Aborting backup.", "ERROR")
                 shutil.rmtree(temp_dir)
                 if progress_callback:
