@@ -25,3 +25,7 @@
 ## 2024-03-24 - Extract invariant lists/tuples to module-level frozensets
 **Learning:** Lists defined within functions or methods for membership checks (e.g., `in ['a', 'b', 'c']`) cause unnecessary memory allocation and list instantiation on every function call. Furthermore, lists have O(n) lookup time.
 **Action:** To eliminate memory allocation overhead and improve execution speed in tight loops or frequently called functions, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
+
+## 2026-06-10 - Optimize Directory Empty Checks
+**Learning:** Checking for an empty directory using `not os.listdir(path)` is inefficient for large directories because it reads all entries into memory. `os.scandir(path)` provides an O(1) alternative.
+**Action:** Use `with os.scandir(path) as it: is_empty = not any(it)` for an O(1) empty directory check that stops at the first entry and correctly manages file descriptors to avoid resource leaks.
