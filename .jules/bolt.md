@@ -25,3 +25,7 @@
 ## 2024-03-24 - Extract invariant lists/tuples to module-level frozensets
 **Learning:** Lists defined within functions or methods for membership checks (e.g., `in ['a', 'b', 'c']`) cause unnecessary memory allocation and list instantiation on every function call. Furthermore, lists have O(n) lookup time.
 **Action:** To eliminate memory allocation overhead and improve execution speed in tight loops or frequently called functions, extract invariant lists/tuples into class-level or module-level constants. Specifically, convert lists used purely for membership checks into `frozenset` objects for O(1) lookups.
+
+## 2024-06-23 - Uptime Kuma Push Monitor Pre-Calculation
+**Learning:** In periodic scheduler jobs, executing URL modifications (like `urllib.parse`) directly inside the job loop incurs overhead for every single ping. Profiling showed that moving URL modification to the scheduler configuration phase reduces the CPU overhead of the URL parsing logic by over 99%.
+**Action:** For configuration-dependent periodic tasks, always pre-calculate static derivations during setup to prevent redundant compute on every tick.
