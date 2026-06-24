@@ -55,14 +55,10 @@ def send_heartbeat(url):
     """
     try:
         # Send Request (GET)
-        # We use a short timeout (10s) to not block the scheduler for too long
-        try:
-             requests.get(url, timeout=10)
-        except requests.exceptions.SSLError:
-             # Retry with verify=False for self-hosted instances
-             with warnings.catch_warnings():
-                 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-                 requests.get(url, timeout=10, verify=False)
+        # verify=False: heartbeat URLs are typically self-hosted (Uptime Kuma) with self-signed certs
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
+            requests.get(url, timeout=10, verify=False)
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
 
