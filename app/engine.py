@@ -34,7 +34,7 @@ EXCLUDED_PATHS = frozenset(
     ]
 )
 TRANSITION_STATES = frozenset(["restarting", "paused", "dead"])
-
+VALID_MOUNT_TYPES = frozenset(["bind", "volume"])
 
 class BackupEngine:
     def __init__(self):
@@ -264,7 +264,7 @@ class BackupEngine:
 
         for mount in container.attrs["Mounts"]:
             # Bind mounts and Volumes
-            if mount["Type"] in ["bind", "volume"]:
+            if mount["Type"] in VALID_MOUNT_TYPES:
                 source = mount["Source"]
 
                 # --- EXCLUSION LOGIC ---
@@ -752,8 +752,10 @@ class BackupEngine:
             master_archive_name = f"Backup_{timestamp}.7z"
             master_archive_path = os.path.join(self.backup_root, master_archive_name)
 
-            # Check if temp dir has content
-            if not os.listdir(backup_tree_root):
+            # Check if temp dir has content — O(1) via scandir
+            with os.scandir(backup_tree_root) as it:
+                is_empty = not any(it)
+            if is_empty:
                 self._log(
                     "No data found in staging directory. Aborting backup.", "ERROR"
                 )

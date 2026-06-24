@@ -28,26 +28,29 @@ def run_backup_job():
     engine.perform_backup()
 
 def _prepare_heartbeat_url(url):
-    """Pre-calculates the Uptime Kuma push monitor URL to avoid redundant parsing."""
+    """Pre-calculate the final heartbeat URL with status/msg query parameters.
+
+    Extracted from the hot send_heartbeat loop so URL parsing is done once
+    during config load, not on every periodic tick.
+    """
+    if not url:
+        return ""
     if "/api/push/" in url:
-         try:
-             parsed = urllib.parse.urlparse(url)
-             query = urllib.parse.parse_qs(parsed.query)
-
-             # Set Status=Up and Msg=Idle
-             query['status'] = ['up']
-             query['msg'] = ['System Idle - Waiting for Schedule']
-
-             # Update query string
-             new_query = urllib.parse.urlencode(query, doseq=True)
-             return urllib.parse.urlunparse(parsed._replace(query=new_query))
-         except Exception:
-             return url
+        try:
+            parsed = urllib.parse.urlparse(url)
+            query = urllib.parse.parse_qs(parsed.query)
+            query['status'] = ['up']
+            query['msg'] = ['System Idle - Waiting for Schedule']
+            new_query = urllib.parse.urlencode(query, doseq=True)
+            return urllib.parse.urlunparse(parsed._replace(query=new_query))
+        except Exception:
+            return url
     return url
 
 def send_heartbeat(url):
     """
     Sends a heartbeat ping to the specified URL.
+    URL is pre-calculated by _prepare_heartbeat_url during config load.
     This runs independently of the backup job to signal 'System is Alive'.
     """
     try:
@@ -60,7 +63,6 @@ def send_heartbeat(url):
              with warnings.catch_warnings():
                  warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
                  requests.get(url, timeout=10, verify=False)
-             
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
 

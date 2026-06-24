@@ -15,6 +15,8 @@ from app.security import encrypt_value, decrypt_value
 # Constants
 ENV_FILE = ".env"
 APP_VERSION = "v1.1.0"
+
+# Module-level tuple to avoid repeated list allocation on every save_env call
 SENSITIVE_KEYS = ("PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME")
 
 def get_env_path():
@@ -48,7 +50,7 @@ def save_env(updates):
     for key in SENSITIVE_KEYS:
         if key in current_env:
             val = current_env[key]
-            # Performance optimization: check prefix before calling encrypt_value
+            # Skip encrypt_value if already encrypted — avoids redundant function call
             if val and not val.startswith("ENC("):
                 current_env[key] = encrypt_value(val)
 
