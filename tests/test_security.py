@@ -1,8 +1,5 @@
-import os
 import unittest
 from unittest.mock import patch, mock_open
-import tempfile
-import importlib
 
 # To test this, we should patch app.security.KEY_FILE or patch os.path.exists
 import app.security
