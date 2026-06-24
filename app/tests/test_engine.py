@@ -38,7 +38,8 @@ def test_is_portainer_by_name(engine):
 
 def test_is_portainer_by_name_uppercase(engine):
     container = MagicMock()
-    del container.image.tags
+    # Simulate missing/inaccessible image attrs — fallback to name check
+    type(container).attrs = PropertyMock(side_effect=AttributeError)
     container.name = "PORTAINER"
     assert engine._is_portainer(container) is True
 

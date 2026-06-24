@@ -312,7 +312,7 @@ class BackupEngine:
             )
             if "portainer/portainer" in image_name:
                 return True
-        except:
+        except Exception:
             pass
         # Fallback: check name
         if "portainer" in container.name.lower():
@@ -519,18 +519,22 @@ class BackupEngine:
         # 1. Collect Unique Volume Paths
         unique_paths = set()
 
-        # Bulk fetch container states to avoid N+1 API calls during reload
+        # Bulk fetch container states to avoid N+1 API calls during reload.
+        # Chunked into batches of 30 to prevent Docker API URI length limits.
         container_ids = [c.id for c in containers]
         fresh_containers = {}
         if container_ids:
             try:
-                # We use client.containers.list to efficiently fetch all fresh container states at once
-                fresh_containers = {
-                    c.id: c
-                    for c in self.client.containers.list(
-                        all=True, filters={"id": container_ids}
+                chunk_size = 30
+                temp_containers = {}
+                for i in range(0, len(container_ids), chunk_size):
+                    chunk = container_ids[i:i + chunk_size]
+                    chunk_res = self.client.containers.list(
+                        all=True, filters={"id": chunk}
                     )
-                }
+                    for c in chunk_res:
+                        temp_containers[c.id] = c
+                fresh_containers = temp_containers
             except Exception as e:
                 self._log(f"Error bulk fetching containers: {e}", "WARNING")
 

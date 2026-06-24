@@ -8,7 +8,6 @@ WORKDIR /app
 # curl ve unzip rclone kurulumu için gerekli
 RUN apt-get update && apt-get install -y \
     curl \
-    curl \
     unzip \
     tar \
     p7zip-full \
