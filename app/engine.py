@@ -16,6 +16,15 @@ from app.api_handlers import APIHandler
 from app.languages import get_text
 from app.security import decrypt_value
 
+# Module-level immutable constants for O(1) membership lookups.
+# Extracted from hot paths to eliminate repeated list instantiation and allocation overhead.
+VALID_MOUNT_TYPES = frozenset(['bind', 'volume'])
+EXCLUDED_SYSTEM_PATHS = frozenset([
+    "/", "/proc", "/sys", "/dev", "/run", "/tmp",
+    "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
+    "/var/run/docker.sock"
+])
+
 class BackupEngine:
     def __init__(self):
         try:
@@ -219,21 +228,15 @@ class BackupEngine:
     def get_container_volumes(self, container):
         """Finds container volume and bind mount paths (on Host), excluding system paths."""
         mounts = []
-        # Define excluded system paths that should NEVER be backed up
-        EXCLUDED_PATHS = [
-            "/", "/proc", "/sys", "/dev", "/run", "/tmp", 
-            "/var/run", "/var/lib/docker", "/etc/localtime", "/etc/timezone",
-            "/var/run/docker.sock"
-        ]
-        
+
         for mount in container.attrs['Mounts']:
             # Bind mounts and Volumes
-            if mount['Type'] in ['bind', 'volume']:
+            if mount['Type'] in VALID_MOUNT_TYPES:
                 source = mount['Source']
-                
+
                 # --- EXCLUSION LOGIC ---
                 # 1. Exact match exclusion
-                if source in EXCLUDED_PATHS:
+                if source in EXCLUDED_SYSTEM_PATHS:
                     self._log(f"Skipping system path: {source} (Container: {container.name})", "WARNING")
                     continue
                     
@@ -443,7 +446,7 @@ class BackupEngine:
                 # Reload container to get latest status/mounts
                 container.reload()
                 # Check if container is in a transition state (restarting, paused)
-                if container.status in ['restarting', 'paused', 'dead']:
+                if container.status in ('restarting', 'paused', 'dead'):
                      self._log(f"Container {container.name} is in '{container.status}' state. Waiting 10s...", "WARNING")
                      time.sleep(10)
                      container.reload()
@@ -599,8 +602,10 @@ class BackupEngine:
             master_archive_name = f"Backup_{timestamp}.7z"
             master_archive_path = os.path.join(self.backup_root, master_archive_name)
             
-            # Check if temp dir has content
-            if not os.listdir(backup_tree_root):
+            # Check if temp dir has content — O(1) via scandir
+            with os.scandir(backup_tree_root) as it:
+                is_empty = not any(it)
+            if is_empty:
                 self._log("No data found in staging directory. Aborting backup.", "ERROR")
                 shutil.rmtree(temp_dir)
                 if progress_callback:
