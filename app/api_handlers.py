@@ -1,6 +1,7 @@
 # This module manages API requests and Portainer integration.
 import requests
 import os
+import urllib.parse
 import logging
 import urllib3
 import re
@@ -32,9 +33,7 @@ class APIHandler:
             return False
 
         try:
-            # Fix URL concatenation to avoid double slashes
-            base_url = self.gotify_url.rstrip("/")
-            url = f"{base_url}/message?token={self.gotify_token}"
+            url = urllib.parse.urljoin(self.gotify_url.rstrip("/") + "/", f"message?token={self.gotify_token}")
             payload = {
                 "title": title,
                 "message": message,
@@ -186,10 +185,8 @@ class APIHandler:
             return False
 
         try:
-            # Fix URL concatenation to avoid double slashes
-            base_url = url.rstrip("/")
             # Send a test message
-            api_url = f"{base_url}/message?token={token}"
+            api_url = urllib.parse.urljoin(url.rstrip("/") + "/", f"message?token={token}")
             payload = {
                 "title": "Test Notification",
                 "message": "This is a test message from Docker Backup Guard.",
