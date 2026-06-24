@@ -63,7 +63,6 @@ def send_heartbeat(url):
              with warnings.catch_warnings():
                  warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
                  requests.get(url, timeout=10, verify=False)
-
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
 

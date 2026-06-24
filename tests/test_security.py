@@ -1,8 +1,5 @@
-import os
 import unittest
 from unittest.mock import patch, mock_open
-import tempfile
-import importlib
 
 # To test this, we should patch app.security.KEY_FILE or patch os.path.exists
 import app.security
@@ -37,6 +34,36 @@ class TestSecurity(unittest.TestCase):
                     self.assertEqual(len(key), 44) # Fernet key is 44 bytes base64
                     mock_makedirs.assert_called_once()
                     mock_file.assert_called_once()
+
+
+    def test_encrypt_value_empty(self):
+        self.assertEqual(app.security.encrypt_value(""), "")
+        self.assertEqual(app.security.encrypt_value(None), "")
+
+    def test_encrypt_value_already_encrypted(self):
+        self.assertEqual(app.security.encrypt_value("ENC(something)"), "ENC(something)")
+
+    @patch('app.security._get_key')
+    def test_encrypt_value_success(self, mock_get_key):
+        from cryptography.fernet import Fernet
+        key = Fernet.generate_key()
+        mock_get_key.return_value = key
+
+        result = app.security.encrypt_value("my_secret")
+        self.assertTrue(result.startswith("ENC("))
+        self.assertTrue(result.endswith(")"))
+
+        # Verify it can be decrypted
+        token = result[4:-1]
+        f = Fernet(key)
+        decrypted = f.decrypt(token.encode()).decode()
+        self.assertEqual(decrypted, "my_secret")
+
+    @patch('app.security._get_key')
+    def test_encrypt_value_exception(self, mock_get_key):
+        mock_get_key.side_effect = Exception("Mocked exception")
+        # Should return original value on error
+        self.assertEqual(app.security.encrypt_value("my_secret"), "my_secret")
 
 if __name__ == '__main__':
     unittest.main()

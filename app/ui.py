@@ -4,6 +4,7 @@ import os
 import time
 import json
 import secrets
+import collections
 import re
 from dotenv import load_dotenv
 from app import engine
@@ -11,6 +12,7 @@ from app import api_handlers
 from app.languages import get_text
 from app.security import encrypt_value, decrypt_value
 
+# Constants
 ENV_FILE = ".env"
 APP_VERSION = "v1.1.0"
 
@@ -213,13 +215,12 @@ def show_setup_wizard():
         default_remote_name = "remote"
         
         # Check if rclone_path is a directory (Docker mount fix)
-        read_path = rclone_path
         if os.path.isdir(rclone_path):
-            read_path = os.path.join(rclone_path, "rclone.conf")
+            rclone_path = os.path.join(rclone_path, "rclone.conf")
 
-        if os.path.exists(read_path) and os.path.isfile(read_path):
+        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
             try:
-                with open(read_path, "r") as f:
+                with open(rclone_path, "r") as f:
                     existing_conf = f.read()
                 
                 # Auto-detect remote name from existing config
@@ -352,16 +353,12 @@ def show_dashboard():
     backup_engine = get_backup_engine()
 
     # Cache candidates with TTL (60 seconds)
-    @st.cache_data(ttl=60)
+    # Performance optimization: Use @st.cache_resource instead of @st.cache_data for Docker objects.
+    # st.cache_data uses pickle to serialize/deserialize objects on every read, which is extremely slow
+    # for complex objects with network client references and causes severe memory overhead.
+    # st.cache_resource stores the direct object reference without serialization.
+    @st.cache_resource(ttl=60)
     def get_cached_candidates():
-        # We need to access the underlying engine method
-        # But st.cache_data requires serializable output.
-        # Docker container objects might not be fully serializable or safe to cache directly 
-        # because they hold client references.
-        # Better approach: Cache the list of dicts with necessary info, 
-        # OR just cache the function result if we trust pickle.
-        # Docker container objects are complex. Let's try caching the result of get_backup_candidates directly first.
-        # If that fails, we might need a wrapper to return simple dicts.
         return backup_engine.get_backup_candidates()
 
     # Create Tabs
@@ -559,25 +556,17 @@ def show_dashboard():
         
         rclone_path = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
         
-        # Logic to handle if rclone_path is a directory (common Docker mistake)
+        # Check if rclone_path is a directory (Docker mount fix)
+        if os.path.isdir(rclone_path):
+            rclone_path = os.path.join(rclone_path, "rclone.conf")
+
         rclone_content = ""
-        if os.path.exists(rclone_path):
-            if os.path.isfile(rclone_path):
-                try:
-                    with open(rclone_path, "r") as f:
-                        rclone_content = f.read()
-                except Exception as e:
-                    st.error(f"Error reading rclone.conf: {e}")
-            elif os.path.isdir(rclone_path):
-                st.warning(f"⚠️ Path {rclone_path} is a directory. Checking for rclone.conf inside...")
-                possible_sub = os.path.join(rclone_path, "rclone.conf")
-                if os.path.exists(possible_sub):
-                    rclone_path = possible_sub
-                    try:
-                        with open(rclone_path, "r") as f:
-                            rclone_content = f.read()
-                    except Exception as e:
-                        st.error(f"Error reading sub-file: {e}")
+        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
+            try:
+                with open(rclone_path, "r") as f:
+                    rclone_content = f.read()
+            except Exception as e:
+                st.error(f"Error reading rclone.conf: {e}")
         else:
             st.info(get_text(lang, "info_rclone_not_found"))
         
@@ -633,7 +622,8 @@ def show_dashboard():
                 with st.expander(f"📦 {container.name} ({container.short_id})"):
                     st.write(f"**{get_text(lang, 'label_status')}:** {container.status}")
                     try:
-                        image_tags = container.image.tags
+                        # Prevent N+1 API calls by getting image name from pre-loaded attributes
+                        image_tags = container.attrs.get('Config', {}).get('Image') or container.attrs.get('Image')
                     except Exception:
                         image_tags = get_text(lang, "unknown_permission_denied")
                     st.write(f"**{get_text(lang, 'label_image')}:** {image_tags}")
@@ -685,8 +675,8 @@ def show_dashboard():
         log_path = "logs/app.log"
         if os.path.exists(log_path):
             with open(log_path, "r") as f:
-                # Read last 200 lines
-                lines = f.readlines()[-200:]
+                # Read last 200 lines efficiently without loading entire file into memory
+                lines = collections.deque(f, maxlen=200)
                 log_content = "".join(lines)
             st.code(log_content, language="log")
         else:

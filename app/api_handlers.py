@@ -1,6 +1,7 @@
 # This module manages API requests and Portainer integration.
 import requests
 import os
+import urllib.parse
 import logging
 import urllib3
 import re
@@ -18,6 +19,7 @@ class APIHandler:
         env_path = ".env/config.env" if os.path.isdir(".env") else ".env"
         load_dotenv(dotenv_path=env_path)
         
+        self.session = requests.Session()
         self.portainer_url = os.getenv("PORTAINER_URL")
         self.portainer_token = decrypt_value(os.getenv("PORTAINER_TOKEN"))
         self.gotify_url = os.getenv("GOTIFY_URL")
@@ -31,15 +33,13 @@ class APIHandler:
             return False
 
         try:
-            # Fix URL concatenation to avoid double slashes
-            base_url = self.gotify_url.rstrip("/")
-            url = f"{base_url}/message?token={self.gotify_token}"
+            url = urllib.parse.urljoin(self.gotify_url.rstrip("/") + "/", f"message?token={self.gotify_token}")
             payload = {
                 "title": title,
                 "message": message,
                 "priority": priority
             }
-            response = requests.post(url, json=payload, timeout=10)
+            response = self.session.post(url, json=payload, timeout=10)
             response.raise_for_status()
             logger.info(f"Gotify notification sent: {title}")
             return True
@@ -58,7 +58,7 @@ class APIHandler:
             if status == "fail":
                 url = f"{url}/fail"
             
-            requests.get(url, timeout=10)
+            self.session.get(url, timeout=10)
             logger.info(f"Healthcheck ping sent ({status}).")
         except Exception as e:
             logger.error(f"Healthcheck ping error: {e}")
@@ -88,7 +88,7 @@ class APIHandler:
             # verify=False is used because local Portainer often has self-signed certs
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-                response = requests.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
+                response = self.session.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
             
             # Log status code and headers for debugging
             logger.info(f"Portainer Backup Response Status: {response.status_code}")
@@ -185,10 +185,8 @@ class APIHandler:
             return False
 
         try:
-            # Fix URL concatenation to avoid double slashes
-            base_url = url.rstrip("/")
             # Send a test message
-            api_url = f"{base_url}/message?token={token}"
+            api_url = urllib.parse.urljoin(url.rstrip("/") + "/", f"message?token={token}")
             payload = {
                 "title": "Test Notification",
                 "message": "This is a test message from Docker Backup Guard.",
