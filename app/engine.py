@@ -477,14 +477,9 @@ class BackupEngine:
         groups = {}
         for container in candidates:
             # Check for com.docker.compose.project label
-            project = container.labels.get("com.docker.compose.project")
-            if project:
-                if project not in groups:
-                    groups[project] = []
-                groups[project].append(container)
-            else:
-                # Standalone containers get their own group
-                groups[container.name] = [container]
+            # Standalone containers get their own group (container.name)
+            key = container.labels.get("com.docker.compose.project") or container.name
+            groups.setdefault(key, []).append(container)
         return groups
 
     def _retry_operation(self, func, retries=3, delay=5, *args, **kwargs):
