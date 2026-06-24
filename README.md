@@ -4,6 +4,7 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
 ![Rclone](https://img.shields.io/badge/Rclone-333333?style=for-the-badge&logo=rclone&logoColor=white)
+![Version](https://img.shields.io/badge/version-v1.2.0-blue?style=for-the-badge)
 
 **Docker Backup Guard** is a robust, user-friendly backup automation tool for Docker containers. It combines a modern web interface with powerful background workers to ensure your data is safe, encrypted, and synced to the cloud.
 
@@ -131,16 +132,26 @@ services:
 ### Environment Variables
 The application manages these automatically via the UI, but you can manually edit `.env/config.env`:
 
-| Variable | Description |
-| :--- | :--- |
-| `BACKUP_PASSWORD` | Password for AES encryption. |
-| `RETENTION_DAYS` | Number of days to keep local/cloud backups. |
-| `SCHEDULE_ENABLE` | `true` or `false` to enable daily backups. |
-| `SCHEDULE_TIME` | Time of day to run backup (e.g., `03:00`). |
-| `RCLONE_REMOTE_NAME` | Name of the remote in `rclone.conf` (default: `remote`). |
-| `RCLONE_DESTINATION` | Path on the cloud remote (default: `backups`). |
-| `GOTIFY_URL` | Gotify server URL for notifications. |
-| `HEALTHCHECK_URL` | URL to ping on success (e.g., Uptime Kuma). |
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `BACKUP_PASSWORD` | Password for AES-256 backup encryption (required) | — |
+| `PORTAINER_URL` | Portainer server URL (optional, for API backup) | — |
+| `PORTAINER_TOKEN` | Portainer API access token | — |
+| `GOTIFY_URL` | Gotify server URL for push notifications | — |
+| `GOTIFY_TOKEN` | Gotify app token | — |
+| `HEALTHCHECK_URL` | Healthcheck.io or Uptime Kuma push URL | — |
+| `HEARTBEAT_URL` | Uptime Kuma push URL for periodic "system alive" pings | — |
+| `HEARTBEAT_INTERVAL` | Minutes between heartbeat pings (0 = disabled) | `0` |
+| `SCHEDULE_ENABLE` | `true` / `false` to enable daily backups | `false` |
+| `SCHEDULE_TIME` | Time of day to run backup (24h format) | `03:00` |
+| `RETENTION_DAYS` | Number of days to keep local and cloud backups | `7` |
+| `TZ` | Timezone for scheduler | `Europe/Berlin` |
+| `LANGUAGE` | UI language: `en`, `tr`, or `de` | `en` |
+| `WEB_UI_USERNAME` | Web dashboard login username | `admin` |
+| `WEB_UI_PASSWORD` | Web dashboard login password | `admin` |
+| `RCLONE_CONFIG_PATH` | Path to rclone configuration file | `/app/rclone.conf` |
+| `RCLONE_REMOTE_NAME` | Name of the remote in `rclone.conf` | `remote` |
+| `RCLONE_DESTINATION` | Cloud destination path for backups | `backups` |
 
 ---
 
@@ -164,6 +175,38 @@ If you don't have an `rclone.conf` yet:
 *   Logs are viewable in the **Logs** tab of the dashboard.
 *   You can clear logs using the **"Clear Logs"** button to free up space.
 *   Common Issue: *Rclone config path is a directory*. The app automatically detects this Docker misconfiguration and writes to `rclone.conf` inside that directory.
+
+---
+
+## ⚡ Performance (v1.2.0)
+*   **O(1) membership lookups:** Module-level `frozenset` constants eliminate repeated list allocations in hot paths.
+*   **Bulk container fetch:** Single Docker API call replaces N+1 per-container reloads, chunked into batches of 30 to avoid URI limits.
+*   **Heartbeat pre-calculation:** URL parsing moved from every periodic tick to config-load time (>99% CPU reduction).
+*   **Parallel stop/start:** `ThreadPoolExecutor` parallelizes container operations, reducing downtime for multi-container stacks.
+*   **Connection pooling:** `requests.Session` with HTTP adapter reuse for Gotify/Portainer API calls.
+*   **Immutable tuples:** Hot-path membership checks use tuples instead of inline lists.
+
+---
+
+## 📁 Project Structure
+```
+.
+├── app/
+│   ├── engine.py              # Core backup/restore logic
+│   ├── api_handlers.py        # Portainer & Gotify API client
+│   ├── scheduler_service.py   # Background scheduler + heartbeat
+│   ├── ui.py                  # Streamlit web dashboard
+│   ├── security.py            # Fernet encryption utilities
+│   ├── languages.py           # i18n translations (en/tr/de)
+│   └── tests/
+├── tests/                     # Unit tests
+├── main.py                    # Streamlit entry point
+├── Dockerfile
+├── docker-compose.yml
+├── entrypoint.sh              # Launches scheduler + web UI
+├── requirements.txt
+└── .env.example               # Environment config template
+```
 
 ---
 
