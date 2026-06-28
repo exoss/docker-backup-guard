@@ -463,6 +463,40 @@ def show_dashboard():
             )
             
             st.markdown("---")
+            st.subheader(get_text(lang, "subheader_security"))
+            col_sec1, col_sec2 = st.columns(2)
+            with col_sec1:
+                backup_pass_display = decrypt_value(os.getenv("BACKUP_PASSWORD", ""))
+                if st.session_state.show_backup_password:
+                    new_backup_password = st.text_input(
+                        get_text(lang, "label_backup_pass"),
+                        value=backup_pass_display,
+                        disabled=disabled,
+                        help=get_text(lang, "help_backup_pass"),
+                    )
+                else:
+                    new_backup_password = st.text_input(
+                        get_text(lang, "label_backup_pass"),
+                        value=backup_pass_display,
+                        type="password",
+                        disabled=disabled,
+                        help=get_text(lang, "help_backup_pass"),
+                    )
+                new_retention = st.number_input(
+                    "Retention (Days)",
+                    value=int(os.getenv("RETENTION_DAYS", "7")),
+                    min_value=1,
+                    disabled=disabled,
+                )
+            with col_sec2:
+                new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
+                new_healthcheck_url = st.text_input(
+                    get_text(lang, "label_healthcheck"),
+                    value=os.getenv("HEALTHCHECK_URL", ""),
+                    disabled=disabled,
+                )
+
+            st.markdown("---")
             st.subheader(get_text(lang, "header_automation"))
             col_auto1, col_auto2 = st.columns(2)
             with col_auto1:
@@ -478,24 +512,13 @@ def show_dashboard():
             with col_s1:
                 new_portainer_url = st.text_input("Portainer URL", value=os.getenv("PORTAINER_URL", ""), disabled=disabled)
                 new_gotify_url = st.text_input("Gotify URL", value=os.getenv("GOTIFY_URL", ""), disabled=disabled)
-                new_healthcheck_url = st.text_input(get_text(lang, "label_healthcheck"), value=os.getenv("HEALTHCHECK_URL", ""), disabled=disabled)
             with col_s2:
                 # Decrypt values for display
                 p_token_display = decrypt_value(os.getenv("PORTAINER_TOKEN", ""))
                 g_token_display = decrypt_value(os.getenv("GOTIFY_TOKEN", ""))
-                backup_pass_display = decrypt_value(os.getenv("BACKUP_PASSWORD", ""))
                 
                 new_portainer_token = st.text_input("Portainer Token", value=p_token_display, type="password", disabled=disabled)
                 new_gotify_token = st.text_input("Gotify Token", value=g_token_display, type="password", disabled=disabled)
-                new_backup_password = st.text_input(
-                    get_text(lang, "label_backup_pass"),
-                    value=backup_pass_display,
-                    type="default" if st.session_state.show_backup_password else "password",
-                    disabled=disabled,
-                    help=get_text(lang, "help_backup_pass"),
-                )
-                new_retention = st.number_input("Retention (Days)", value=int(os.getenv("RETENTION_DAYS", "7")), min_value=1, disabled=disabled)
-                new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
             
             col_hb1, col_hb2 = st.columns(2)
             with col_hb1:
