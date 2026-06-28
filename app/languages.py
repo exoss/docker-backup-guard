@@ -102,11 +102,15 @@ TRANSLATIONS = {
         "label_heartbeat_interval": "Heartbeat Interval (Minutes)",
         "help_heartbeat_interval": "How often to send a ping. Set to 0 to disable.",
         "toggle_edit": "Unlock / Edit Settings",
+        "toggle_show_backup_password": "Show Backup Password",
+        "help_show_backup_password": "Reveal the current backup password in the settings form.",
         "header_logs": "System Logs",
         "btn_refresh_logs": "Refresh Logs",
         "btn_clear_logs": "🗑️ Clear Logs",
         "status_logs_cleared": "✅ Logs cleared successfully.",
         "btn_save_changes": "Save Changes",
+        "status_settings_saved": "✅ Settings saved! Reloading...",
+        "error_backup_pass_required": "⛔ Backup password cannot be empty.",
         
         # Portainer Backup
         "subheader_portainer_backup": "Portainer Configuration Backup",
@@ -259,11 +263,15 @@ TRANSLATIONS = {
         "label_heartbeat_interval": "Heartbeat Aralığı (Dakika)",
         "help_heartbeat_interval": "Sinyal gönderme sıklığı. Devre dışı bırakmak için 0 yapın.",
         "toggle_edit": "Kilidi Aç / Ayarları Düzenle",
+        "toggle_show_backup_password": "Yedekleme Parolasını Göster",
+        "help_show_backup_password": "Ayarlar formundaki mevcut yedekleme parolasını görünür yapar.",
         "header_logs": "Sistem Logları",
         "btn_refresh_logs": "Logları Yenile",
         "btn_clear_logs": "🗑️ Logları Temizle",
         "status_logs_cleared": "✅ Loglar başarıyla temizlendi.",
         "btn_save_changes": "Değişiklikleri Kaydet",
+        "status_settings_saved": "✅ Ayarlar kaydedildi! Yeniden yükleniyor...",
+        "error_backup_pass_required": "⛔ Yedekleme parolası boş bırakılamaz.",
         
         # Portainer Backup
         "subheader_portainer_backup": "Portainer Konfigürasyon Yedekleme",
@@ -416,11 +424,15 @@ TRANSLATIONS = {
         "label_heartbeat_interval": "Heartbeat-Intervall (Minuten)",
         "help_heartbeat_interval": "Häufigkeit des Pings. Auf 0 setzen zum Deaktivieren.",
         "toggle_edit": "Entsperren / Einstellungen bearbeiten",
+        "toggle_show_backup_password": "Backup-Passwort anzeigen",
+        "help_show_backup_password": "Zeigt das aktuelle Backup-Passwort im Einstellungsformular an.",
         "header_logs": "Systemprotokolle",
         "btn_refresh_logs": "Logs aktualisieren",
         "btn_clear_logs": "🗑️ Logs löschen",
         "status_logs_cleared": "✅ Logs erfolgreich gelöscht.",
         "btn_save_changes": "Änderungen speichern",
+        "status_settings_saved": "✅ Einstellungen gespeichert! Neu laden...",
+        "error_backup_pass_required": "⛔ Das Backup-Passwort darf nicht leer sein.",
         
         # Portainer Backup
         "subheader_portainer_backup": "Portainer Konfigurationssicherung",

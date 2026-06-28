@@ -14,7 +14,7 @@ from app.security import encrypt_value, decrypt_value
 
 # Constants
 ENV_FILE = ".env"
-APP_VERSION = "v1.2.0"
+APP_VERSION = "v1.2.1"
 
 # Module-level tuple to avoid repeated list allocation on every save_env call
 SENSITIVE_KEYS = ("PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME")
@@ -439,6 +439,15 @@ def show_dashboard():
         st.toggle(get_text(lang, "toggle_edit"), value=st.session_state.settings_edit_mode, on_change=toggle_edit)
         
         disabled = not st.session_state.settings_edit_mode
+        if "show_backup_password" not in st.session_state:
+            st.session_state.show_backup_password = False
+
+        st.toggle(
+            get_text(lang, "toggle_show_backup_password"),
+            key="show_backup_password",
+            disabled=disabled,
+            help=get_text(lang, "help_show_backup_password"),
+        )
         
         with st.form("settings_editor"):
             # Language Selection
@@ -474,9 +483,17 @@ def show_dashboard():
                 # Decrypt values for display
                 p_token_display = decrypt_value(os.getenv("PORTAINER_TOKEN", ""))
                 g_token_display = decrypt_value(os.getenv("GOTIFY_TOKEN", ""))
+                backup_pass_display = decrypt_value(os.getenv("BACKUP_PASSWORD", ""))
                 
                 new_portainer_token = st.text_input("Portainer Token", value=p_token_display, type="password", disabled=disabled)
                 new_gotify_token = st.text_input("Gotify Token", value=g_token_display, type="password", disabled=disabled)
+                new_backup_password = st.text_input(
+                    get_text(lang, "label_backup_pass"),
+                    value=backup_pass_display,
+                    type="default" if st.session_state.show_backup_password else "password",
+                    disabled=disabled,
+                    help=get_text(lang, "help_backup_pass"),
+                )
                 new_retention = st.number_input("Retention (Days)", value=int(os.getenv("RETENTION_DAYS", "7")), min_value=1, disabled=disabled)
                 new_tz = st.text_input("Timezone", value=os.getenv("TZ", "Europe/Berlin"), disabled=disabled)
             
@@ -528,27 +545,31 @@ def show_dashboard():
                     st.warning(get_text(lang, "warning_gotify_required"))
             
             if submitted:
-                env_updates = {
-                    "LANGUAGE": lang_options[new_lang_label],
-                    "SCHEDULE_ENABLE": str(new_schedule_enable).lower(),
-                    "SCHEDULE_TIME": new_schedule_time,
-                    "PORTAINER_URL": new_portainer_url,
-                    "PORTAINER_TOKEN": new_portainer_token,
-                    "GOTIFY_URL": new_gotify_url,
-                    "GOTIFY_TOKEN": new_gotify_token,
-                    "RETENTION_DAYS": new_retention,
-                    "TZ": new_tz,
-                    "HEALTHCHECK_URL": new_healthcheck_url,
-                    "HEARTBEAT_URL": new_heartbeat_url,
-                    "HEARTBEAT_INTERVAL": new_heartbeat_interval,
-                    "WEB_UI_USERNAME": new_web_ui_username,
-                    "WEB_UI_PASSWORD": new_web_ui_password
-                }
-                if save_env(env_updates):
-                    st.success("Settings saved! Reloading...")
-                    st.session_state.settings_edit_mode = False
-                    time.sleep(1)
-                    st.rerun()
+                if not str(new_backup_password).strip():
+                    st.error(get_text(lang, "error_backup_pass_required"))
+                else:
+                    env_updates = {
+                        "LANGUAGE": lang_options[new_lang_label],
+                        "SCHEDULE_ENABLE": str(new_schedule_enable).lower(),
+                        "SCHEDULE_TIME": new_schedule_time,
+                        "PORTAINER_URL": new_portainer_url,
+                        "PORTAINER_TOKEN": new_portainer_token,
+                        "GOTIFY_URL": new_gotify_url,
+                        "GOTIFY_TOKEN": new_gotify_token,
+                        "BACKUP_PASSWORD": new_backup_password,
+                        "RETENTION_DAYS": new_retention,
+                        "TZ": new_tz,
+                        "HEALTHCHECK_URL": new_healthcheck_url,
+                        "HEARTBEAT_URL": new_heartbeat_url,
+                        "HEARTBEAT_INTERVAL": new_heartbeat_interval,
+                        "WEB_UI_USERNAME": new_web_ui_username,
+                        "WEB_UI_PASSWORD": new_web_ui_password
+                    }
+                    if save_env(env_updates):
+                        st.success(get_text(lang, "status_settings_saved"))
+                        st.session_state.settings_edit_mode = False
+                        time.sleep(1)
+                        st.rerun()
 
         # --- Rclone Editor (Outside Form) ---
         st.markdown("---")
