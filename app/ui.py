@@ -19,6 +19,20 @@ APP_VERSION = "v1.2.1"
 # Module-level tuple to avoid repeated list allocation on every save_env call
 SENSITIVE_KEYS = ("PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME")
 
+
+@st.cache_data
+def _cached_load_dotenv(mtime, path):
+    load_dotenv(dotenv_path=path, override=True)
+
+def load_env_cached():
+    path = get_env_path()
+    try:
+        mtime = os.stat(path).st_mtime
+    except FileNotFoundError:
+        mtime = 0
+    _cached_load_dotenv(mtime, path)
+
+
 def get_env_path():
     """Determines the correct path for the .env file."""
     # If .env is a directory (Docker mount issue), use a file inside it
@@ -330,7 +344,7 @@ def show_setup_wizard():
 def show_dashboard():
     """Displays the main control panel with tabs."""
     # Load env to get language
-    load_dotenv(dotenv_path=get_env_path(), override=True)
+    load_env_cached()
     lang = os.getenv("LANGUAGE", "en")
     
     st.set_page_config(page_title=get_text(lang, "page_title_dashboard"), page_icon="📦", layout="wide")
@@ -741,7 +755,7 @@ def show_dashboard():
 
 def run():
     # Force reload env to get the latest values
-    load_dotenv(dotenv_path=get_env_path(), override=True)
+    load_env_cached()
     
     # Check if critical configuration exists
     backup_password = os.getenv("BACKUP_PASSWORD")
