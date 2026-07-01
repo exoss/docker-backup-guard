@@ -62,3 +62,49 @@ def test_is_portainer_exception_in_tags_and_name_does_not_match(engine):
     type(container).attrs = PropertyMock(side_effect=AttributeError)
     container.name = "nginx"
     assert engine._is_portainer(container) is False
+
+def test_group_containers_empty(engine):
+    assert engine._group_containers([]) == {}
+
+def test_group_containers_compose_project(engine):
+    container1 = MagicMock()
+    container1.labels = {"com.docker.compose.project": "project_a"}
+    container2 = MagicMock()
+    container2.labels = {"com.docker.compose.project": "project_a"}
+
+    candidates = [container1, container2]
+    groups = engine._group_containers(candidates)
+
+    assert list(groups.keys()) == ["project_a"]
+    assert groups["project_a"] == [container1, container2]
+
+def test_group_containers_standalone(engine):
+    container1 = MagicMock()
+    container1.labels = {}
+    container1.name = "standalone_1"
+
+    container2 = MagicMock()
+    container2.labels = {}
+    container2.name = "standalone_2"
+
+    candidates = [container1, container2]
+    groups = engine._group_containers(candidates)
+
+    assert set(groups.keys()) == {"standalone_1", "standalone_2"}
+    assert groups["standalone_1"] == [container1]
+    assert groups["standalone_2"] == [container2]
+
+def test_group_containers_mixed(engine):
+    container1 = MagicMock()
+    container1.labels = {"com.docker.compose.project": "project_b"}
+
+    container2 = MagicMock()
+    container2.labels = {}
+    container2.name = "standalone_3"
+
+    candidates = [container1, container2]
+    groups = engine._group_containers(candidates)
+
+    assert set(groups.keys()) == {"project_b", "standalone_3"}
+    assert groups["project_b"] == [container1]
+    assert groups["standalone_3"] == [container2]
