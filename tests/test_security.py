@@ -65,5 +65,31 @@ class TestSecurity(unittest.TestCase):
         # Should return original value on error
         self.assertEqual(app.security.encrypt_value("my_secret"), "my_secret")
 
+
+    def test_decrypt_value_empty(self):
+        self.assertEqual(app.security.decrypt_value(""), "")
+        self.assertEqual(app.security.decrypt_value(None), "")
+
+    def test_decrypt_value_unencrypted(self):
+        self.assertEqual(app.security.decrypt_value("not_encrypted"), "not_encrypted")
+
+    @patch('app.security._get_key')
+    def test_decrypt_value_success(self, mock_get_key):
+        from cryptography.fernet import Fernet
+        key = Fernet.generate_key()
+        mock_get_key.return_value = key
+
+        f = Fernet(key)
+        encrypted_token = f.encrypt(b"my_secret").decode()
+        encrypted_value = f"ENC({encrypted_token})"
+
+        self.assertEqual(app.security.decrypt_value(encrypted_value), "my_secret")
+
+    @patch('app.security._get_key')
+    def test_decrypt_value_exception(self, mock_get_key):
+        mock_get_key.side_effect = Exception("Mocked exception")
+        # Should return original value on error
+        self.assertEqual(app.security.decrypt_value("ENC(invalid_token)"), "ENC(invalid_token)")
+
 if __name__ == '__main__':
     unittest.main()
