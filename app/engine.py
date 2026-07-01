@@ -36,6 +36,7 @@ EXCLUDED_PATHS = frozenset(
 TRANSITION_STATES = frozenset(["restarting", "paused", "dead"])
 VALID_MOUNT_TYPES = frozenset(["bind", "volume"])
 
+
 class BackupEngine:
     def __init__(self):
         try:
@@ -528,7 +529,7 @@ class BackupEngine:
                 chunk_size = 30
                 temp_containers = {}
                 for i in range(0, len(container_ids), chunk_size):
-                    chunk = container_ids[i:i + chunk_size]
+                    chunk = container_ids[i : i + chunk_size]
                     chunk_res = self.client.containers.list(
                         all=True, filters={"id": chunk}
                     )
@@ -704,16 +705,32 @@ class BackupEngine:
         backup_tree_root = os.path.join(temp_dir, "hostfs")
         os.makedirs(backup_tree_root, exist_ok=True)
 
-        candidates = self.get_backup_candidates()
+        if container_id and self.client:
+            candidates = []
+            try:
+                c = self.client.containers.get(container_id)
+                if c.labels.get("backup.enable") == "true":
+                    if self._is_portainer(c):
+                        if self.portainer_api_configured:
+                            self._log(
+                                f"Detected Portainer container: {c.name}. Skipping file-level backup in favor of API backup.",
+                                "INFO",
+                            )
+                        else:
+                            self._log(
+                                f"Detected Portainer container: {c.name}, but API credentials missing. Falling back to Stop/Copy backup.",
+                                "WARNING",
+                            )
+                            candidates.append(c)
+                    else:
+                        candidates.append(c)
+            except docker.errors.NotFound:
+                pass
+        else:
+            candidates = self.get_backup_candidates()
 
         # Filter if specific container requested
         if container_id:
-            candidates = [
-                c
-                for c in candidates
-                if c.id == container_id or c.short_id == container_id
-            ]
-
             if not candidates:
                 self._log("No containers found for backup.", "WARNING")
                 shutil.rmtree(temp_dir)
