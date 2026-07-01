@@ -30,7 +30,7 @@ def save_env(updates):
     """Updates the .env file with the given dictionary, preserving existing keys."""
     target_file = get_env_path()
     current_env = {}
-    
+
     # 1. Read existing
     if os.path.exists(target_file):
         try:
@@ -45,7 +45,7 @@ def save_env(updates):
 
     # 2. Update with new values
     current_env.update(updates)
-    
+
     # 3. Encrypt Sensitive Keys
     for key in SENSITIVE_KEYS:
         if key in current_env:
@@ -60,7 +60,7 @@ def save_env(updates):
                 f.write(f"{key}={value}\n")
             f.flush()
             os.fsync(f.fileno())
-        
+
         # Force reload env to update python environment immediately
         load_dotenv(dotenv_path=target_file, override=True)
         return True
@@ -74,7 +74,7 @@ def check_password():
         return True
 
     # If no credentials set in env (first run or not setup), allow through to Setup
-    # But Setup handles its own state. 
+    # But Setup handles its own state.
     # If .env exists but no WEB_UI credentials, default to admin/admin or force setup?
     # Let's check env first.
     env_user = decrypt_value(os.getenv("WEB_UI_USERNAME"))
@@ -93,7 +93,7 @@ def check_password():
         """Checks whether a password entered by the user is correct."""
         user = st.session_state.get("username", "")
         password = st.session_state.get("password", "")
-        
+
         if user == env_user and password == env_pass:
             st.session_state["password_correct"] = True
             # Safe delete
@@ -106,12 +106,12 @@ def check_password():
     lang = os.getenv("LANGUAGE", "en")
 
     st.set_page_config(page_title="Docker Backup Guard - Login", page_icon="🔒", layout="centered")
-    
+
     st.title(get_text(lang, "header_login"))
-    
+
     st.text_input(get_text(lang, "label_username"), key="username")
     st.text_input(get_text(lang, "label_password"), type="password", on_change=password_entered, key="password")
-    
+
     if st.button(get_text(lang, "btn_login")):
         password_entered()
         if st.session_state.get("password_correct", False):
@@ -119,7 +119,7 @@ def check_password():
 
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
         st.error(get_text(lang, "error_login_failed"))
-    
+
     return False
 
 def show_setup_wizard():
@@ -130,9 +130,9 @@ def show_setup_wizard():
 
     # Mapping for display names
     lang_options = {"English": "en", "Türkçe": "tr", "Deutsch": "de"}
-    
+
     st.set_page_config(page_title="Docker Backup Guard - Setup", page_icon="⚙️", layout="centered")
-    
+
     # Language Selector at the top
     selected_lang_name = st.selectbox(
         "🌍 Language / Dil / Sprache",
@@ -141,11 +141,11 @@ def show_setup_wizard():
     )
     st.session_state.setup_lang = lang_options[selected_lang_name]
     lang = st.session_state.setup_lang
-    
+
     st.title(get_text(lang, "header_setup"))
     st.markdown("---")
     st.warning(get_text(lang, "warning_env_missing"))
-    
+
     with st.form("setup_form"):
         st.subheader(get_text(lang, "subheader_portainer"))
         st.info(get_text(lang, "info_portainer"))
@@ -182,13 +182,13 @@ def show_setup_wizard():
             backup_pass = st.text_input(get_text(lang, "label_backup_pass"), type="password", help=get_text(lang, "help_backup_pass"))
         with col6:
             retention = st.number_input(get_text(lang, "label_retention"), min_value=1, value=7, help=get_text(lang, "help_retention"))
-        
+
         col7, col8 = st.columns(2)
         with col7:
             tz = st.text_input(get_text(lang, "label_timezone"), value="Europe/Berlin")
         with col8:
             healthcheck_url = st.text_input(get_text(lang, "label_healthcheck"), placeholder="https://hc-ping.com/...")
-        
+
         col_h1, col_h2 = st.columns(2)
         with col_h1:
             heartbeat_url = st.text_input(get_text(lang, "label_heartbeat_url"), placeholder="https://uptime.kuma/api/push/...", help=get_text(lang, "help_heartbeat_url"))
@@ -206,24 +206,23 @@ def show_setup_wizard():
         st.markdown("---")
         st.subheader(get_text(lang, "subheader_rclone"))
         col9, col10 = st.columns(2)
-        
+
         with col9:
             rclone_path = st.text_input(get_text(lang, "label_rclone_path"), value="/app/rclone.conf", help=get_text(lang, "help_rclone_path"))
 
         # Read existing rclone.conf if available to auto-fill remote name
         existing_conf = ""
         default_remote_name = "remote"
-        
-        # Check if rclone_path is a directory (Docker mount fix)
-        read_rclone_path = rclone_path
-        if os.path.isdir(read_rclone_path):
-            read_rclone_path = os.path.join(read_rclone_path, "rclone.conf")
 
-        if os.path.exists(read_rclone_path) and os.path.isfile(read_rclone_path):
+        # Check if rclone_path is a directory (Docker mount fix)
+        if os.path.isdir(rclone_path):
+            rclone_path = os.path.join(rclone_path, "rclone.conf")
+
+        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
             try:
-                with open(read_rclone_path, "r") as f:
+                with open(rclone_path, "r") as f:
                     existing_conf = f.read()
-                
+
                 # Auto-detect remote name from existing config
                 match = re.search(r"^\[(.*?)\]", existing_conf, re.MULTILINE)
                 if match:
@@ -237,19 +236,19 @@ def show_setup_wizard():
 
         # Rclone Config Content Editor
         st.markdown(f"""
-        **{get_text(lang, 'help_rclone_content_msg')}**  
-        👉 [rclone config docs](https://rclone.org/commands/rclone_config/)  
+        **{get_text(lang, 'help_rclone_content_msg')}**
+        👉 [rclone config docs](https://rclone.org/commands/rclone_config/)
         ℹ️ *{get_text(lang, 'help_rclone_content_hint')}*
         """)
 
         rclone_content = st.text_area(
-            get_text(lang, "label_rclone_content"), 
-            value=existing_conf, 
+            get_text(lang, "label_rclone_content"),
+            value=existing_conf,
             height=200
         )
 
         st.markdown("---")
-        
+
         # Action Buttons
         col_btn1, col_btn2 = st.columns([1, 1])
         with col_btn1:
@@ -301,7 +300,7 @@ def show_setup_wizard():
 
                 # Generate random salt for encryption
                 random_salt = secrets.token_hex(16)
-                
+
                 env_data = {
                     "LANGUAGE": lang,
                     "PORTAINER_URL": portainer_url if portainer_url else "",
@@ -321,7 +320,7 @@ def show_setup_wizard():
                     "WEB_UI_USERNAME": web_user,
                     "WEB_UI_PASSWORD": web_pass
                 }
-                
+
                 if save_env(env_data):
                     st.success(get_text(lang, "success_setup"))
                     time.sleep(2)
@@ -332,25 +331,25 @@ def show_dashboard():
     # Load env to get language
     load_dotenv(dotenv_path=get_env_path(), override=True)
     lang = os.getenv("LANGUAGE", "en")
-    
+
     st.set_page_config(page_title=get_text(lang, "page_title_dashboard"), page_icon="📦", layout="wide")
-    
+
     st.sidebar.title(get_text(lang, "menu_title"))
     st.sidebar.success(get_text(lang, "system_online"))
     st.sidebar.caption(f"{APP_VERSION}")
-    
+
     # Logout Button
     if st.sidebar.button(get_text(lang, "btn_logout")):
         st.session_state["password_correct"] = False
         st.rerun()
 
     st.title(get_text(lang, "header_dashboard"))
-    
+
     # Initialize Engine (Cached)
     @st.cache_resource
     def get_backup_engine():
         return engine.BackupEngine()
-        
+
     backup_engine = get_backup_engine()
 
     # Cache candidates with TTL (60 seconds)
@@ -364,16 +363,16 @@ def show_dashboard():
 
     # Create Tabs
     tab_dash, tab_settings, tab_actions, tab_logs = st.tabs([
-        "📊 " + get_text(lang, "tab_dashboard"), 
-        "⚙️ " + get_text(lang, "tab_settings"), 
-        "🚀 " + get_text(lang, "tab_actions"), 
+        "📊 " + get_text(lang, "tab_dashboard"),
+        "⚙️ " + get_text(lang, "tab_settings"),
+        "🚀 " + get_text(lang, "tab_actions"),
         "📜 " + get_text(lang, "tab_logs")
     ])
 
     # --- TAB 1: DASHBOARD ---
     with tab_dash:
         st.header(get_text(lang, "header_overview"))
-        
+
         # Load State
         state_path = "/backups/backup_state.json"
         state = {}
@@ -383,7 +382,7 @@ def show_dashboard():
                     state = json.load(f)
             except:
                 pass
-        
+
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric(get_text(lang, "metric_last_success"), state.get("last_success", "Never"))
@@ -394,7 +393,7 @@ def show_dashboard():
             st.metric(get_text(lang, "metric_protected"), state.get("protected_containers", 0))
 
         st.markdown("---")
-        
+
         # Quick Action: Full Backup
         if st.button(get_text(lang, "btn_full_backup"), type="primary", use_container_width=True):
             with st.status(get_text(lang, "status_full_backup_start"), expanded=True) as status:
@@ -412,7 +411,7 @@ def show_dashboard():
                     if success:
                         st.success(get_text(lang, "status_complete"))
                         api_handlers.APIHandler().send_gotify_notification(
-                            get_text(lang, "notif_full_success_title"), 
+                            get_text(lang, "notif_full_success_title"),
                             get_text(lang, "notif_full_success_msg")
                         )
                         status.update(label=get_text(lang, "status_complete"), state="complete")
@@ -421,7 +420,7 @@ def show_dashboard():
                     else:
                         st.error(get_text(lang, "status_error_process"))
                         api_handlers.APIHandler().send_gotify_notification(
-                            get_text(lang, "notif_full_error_title"), 
+                            get_text(lang, "notif_full_error_title"),
                             get_text(lang, "notif_full_error_msg"), priority=8
                         )
                         status.update(label=get_text(lang, "status_error_label"), state="error")
@@ -429,16 +428,16 @@ def show_dashboard():
     # --- TAB 2: SETTINGS ---
     with tab_settings:
         st.header(get_text(lang, "header_config"))
-        
+
         # Edit Mode Toggle
         if 'settings_edit_mode' not in st.session_state:
             st.session_state.settings_edit_mode = False
-            
+
         def toggle_edit():
             st.session_state.settings_edit_mode = not st.session_state.settings_edit_mode
-            
+
         st.toggle(get_text(lang, "toggle_edit"), value=st.session_state.settings_edit_mode, on_change=toggle_edit)
-        
+
         disabled = not st.session_state.settings_edit_mode
         if "show_backup_password" not in st.session_state:
             st.session_state.show_backup_password = False
@@ -449,20 +448,20 @@ def show_dashboard():
             disabled=disabled,
             help=get_text(lang, "help_show_backup_password"),
         )
-        
+
         with st.form("settings_editor"):
             # Language Selection
             lang_options = {"English": "en", "Türkçe": "tr", "Deutsch": "de"}
             current_lang_code = os.getenv("LANGUAGE", "en")
             current_lang_label = next((k for k, v in lang_options.items() if v == current_lang_code), "English")
-            
+
             new_lang_label = st.selectbox(
                 get_text(lang, "lang_select_label"),
                 options=list(lang_options.keys()),
                 index=list(lang_options.keys()).index(current_lang_label),
                 disabled=disabled
             )
-            
+
             st.markdown("---")
             st.subheader(get_text(lang, "subheader_security"))
             col_sec1, col_sec2 = st.columns(2)
@@ -508,7 +507,7 @@ def show_dashboard():
                 new_schedule_time = st.text_input(get_text(lang, "label_schedule_time"), value=os.getenv("SCHEDULE_TIME", "03:00"), help=get_text(lang, "help_schedule_time"), disabled=disabled)
 
             st.markdown("---")
-            
+
             col_s1, col_s2 = st.columns(2)
             with col_s1:
                 new_portainer_url = st.text_input("Portainer URL", value=os.getenv("PORTAINER_URL", ""), disabled=disabled)
@@ -517,10 +516,10 @@ def show_dashboard():
                 # Decrypt values for display
                 p_token_display = decrypt_value(os.getenv("PORTAINER_TOKEN", ""))
                 g_token_display = decrypt_value(os.getenv("GOTIFY_TOKEN", ""))
-                
+
                 new_portainer_token = st.text_input("Portainer Token", value=p_token_display, type="password", disabled=disabled)
                 new_gotify_token = st.text_input("Gotify Token", value=g_token_display, type="password", disabled=disabled)
-            
+
             col_hb1, col_hb2 = st.columns(2)
             with col_hb1:
                  new_heartbeat_url = st.text_input(get_text(lang, "label_heartbeat_url"), value=os.getenv("HEARTBEAT_URL", ""), disabled=disabled, help=get_text(lang, "help_heartbeat_url"))
@@ -545,7 +544,7 @@ def show_dashboard():
                 test_gotify = st.form_submit_button(get_text(lang, "btn_test_gotify"), disabled=disabled)
             with col_b3:
                 submitted = st.form_submit_button(get_text(lang, "btn_save_changes"), disabled=disabled)
-            
+
             if test_conn:
                 if new_portainer_url and new_portainer_token:
                     with st.spinner(get_text(lang, "status_test_running")):
@@ -567,7 +566,7 @@ def show_dashboard():
                             st.error(get_text(lang, "status_test_failed"))
                 else:
                     st.warning(get_text(lang, "warning_gotify_required"))
-            
+
             if submitted:
                 if not str(new_backup_password).strip():
                     st.error(get_text(lang, "error_backup_pass_required"))
@@ -598,9 +597,9 @@ def show_dashboard():
         # --- Rclone Editor (Outside Form) ---
         st.markdown("---")
         st.subheader(get_text(lang, "subheader_rclone_editor"))
-        
+
         rclone_path = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
-        
+
         # Check if rclone_path is a directory (Docker mount fix)
         if os.path.isdir(rclone_path):
             rclone_path = os.path.join(rclone_path, "rclone.conf")
@@ -614,9 +613,9 @@ def show_dashboard():
                 st.error(f"Error reading rclone.conf: {e}")
         else:
             st.info(get_text(lang, "info_rclone_not_found"))
-        
+
         new_rclone_content = st.text_area("rclone.conf Content", value=rclone_content, height=200, disabled=disabled, help=get_text(lang, "help_rclone_content_hint"))
-        
+
         if st.button(get_text(lang, "btn_save_rclone"), disabled=disabled):
             try:
                 with open(rclone_path, "w") as f:
@@ -634,7 +633,7 @@ def show_dashboard():
     with tab_actions:
         # Portainer Backup Section
         st.subheader(get_text(lang, "subheader_portainer_backup"))
-        
+
         col_p1, col_p2 = st.columns([1, 2])
         with col_p1:
             if st.button(get_text(lang, "btn_backup_portainer"), type="secondary"):
@@ -650,12 +649,12 @@ def show_dashboard():
                         else:
                             st.error(get_text(lang, "status_backup_portainer_failed"))
                             status.update(label=get_text(lang, "status_backup_portainer_failed"), state="error")
-        
+
         st.markdown("---")
 
         candidates = get_cached_candidates()
         st.subheader(f"{get_text(lang, 'subheader_candidates')} ({len(candidates)})")
-        
+
         if st.button("🔄 Refresh List"):
             get_cached_candidates.clear()
             st.rerun()
@@ -672,7 +671,7 @@ def show_dashboard():
                     except Exception:
                         image_tags = get_text(lang, "unknown_permission_denied")
                     st.write(f"**{get_text(lang, 'label_image')}:** {image_tags}")
-                    
+
                     if st.button(get_text(lang, "btn_backup").format(name=container.name), key=f"btn_{container.id}"):
                         with st.status(get_text(lang, "status_backing_up").format(name=container.name), expanded=True) as status:
                             if not os.getenv("BACKUP_PASSWORD"):
@@ -682,19 +681,19 @@ def show_dashboard():
                                 # Define callback for real-time progress updates
                                 def update_progress(msg):
                                     status.write(msg)
-                                    
+
                                 success = backup_engine.perform_backup(container_id=container.id, progress_callback=update_progress)
                                 if success:
                                     st.success(get_text(lang, "status_complete"))
                                     api_handlers.APIHandler().send_gotify_notification(
-                                        get_text(lang, "notif_success_title"), 
+                                        get_text(lang, "notif_success_title"),
                                         get_text(lang, "notif_success_msg").format(name=container.name)
                                     )
                                     status.update(label=get_text(lang, "status_complete"), state="complete")
                                 else:
                                     st.error(get_text(lang, "status_error_process"))
                                     api_handlers.APIHandler().send_gotify_notification(
-                                        get_text(lang, "notif_error_title"), 
+                                        get_text(lang, "notif_error_title"),
                                         get_text(lang, "notif_error_msg").format(name=container.name), priority=8
                                     )
                                     status.update(label=get_text(lang, "status_error_label"), state="error")
@@ -702,7 +701,7 @@ def show_dashboard():
     # --- TAB 4: LOGS ---
     with tab_logs:
         st.header(get_text(lang, "header_logs"))
-        
+
         col_l1, col_l2 = st.columns([1, 4])
         with col_l1:
             if st.button(get_text(lang, "btn_refresh_logs")):
@@ -716,7 +715,7 @@ def show_dashboard():
                     st.success(get_text(lang, "status_logs_cleared"))
                     time.sleep(1)
                     st.rerun()
-            
+
         log_path = "logs/app.log"
         if os.path.exists(log_path):
             with open(log_path, "r") as f:
@@ -730,10 +729,10 @@ def show_dashboard():
 def run():
     # Force reload env to get the latest values
     load_dotenv(dotenv_path=get_env_path(), override=True)
-    
+
     # Check if critical configuration exists
     backup_password = os.getenv("BACKUP_PASSWORD")
-    
+
     # If password is missing or empty, show setup
     if not backup_password:
         show_setup_wizard()
@@ -746,5 +745,5 @@ def run():
     # Scheduler is now started via entrypoint.sh as a separate process.
     # We no longer start it here to avoid duplication and dependency on UI session.
     # start_scheduler()
-    
+
     show_dashboard()
