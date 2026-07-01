@@ -26,6 +26,11 @@ def _get_key():
         print(f"Warning: Could not save encryption key to {KEY_FILE}: {e}")
     return key
 
+@lru_cache(maxsize=1)
+def _get_fernet(key):
+    """Returns a cached Fernet instance for the given key."""
+    return Fernet(key)
+
 def encrypt_value(value):
     """Encrypts a string value."""
     if not value:
@@ -35,7 +40,7 @@ def encrypt_value(value):
         return value
         
     try:
-        f = Fernet(_get_key())
+        f = _get_fernet(_get_key())
         token = f.encrypt(value.encode()).decode()
         return f"ENC({token})"
     except Exception as e:
@@ -50,7 +55,7 @@ def decrypt_value(value):
     if value.startswith("ENC("):
         try:
             token = value[4:-1]
-            f = Fernet(_get_key())
+            f = _get_fernet(_get_key())
             return f.decrypt(token.encode()).decode()
         except Exception as e:
             print(f"Decryption error: {e}")
