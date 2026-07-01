@@ -215,12 +215,13 @@ def show_setup_wizard():
         default_remote_name = "remote"
         
         # Check if rclone_path is a directory (Docker mount fix)
-        if os.path.isdir(rclone_path):
-            rclone_path = os.path.join(rclone_path, "rclone.conf")
+        read_rclone_path = rclone_path
+        if os.path.isdir(read_rclone_path):
+            read_rclone_path = os.path.join(read_rclone_path, "rclone.conf")
 
-        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
+        if os.path.exists(read_rclone_path) and os.path.isfile(read_rclone_path):
             try:
-                with open(rclone_path, "r") as f:
+                with open(read_rclone_path, "r") as f:
                     existing_conf = f.read()
                 
                 # Auto-detect remote name from existing config
@@ -601,8 +602,11 @@ def show_dashboard():
         rclone_path = os.getenv("RCLONE_CONFIG_PATH", "/app/rclone.conf")
         
         # Check if rclone_path is a directory (Docker mount fix)
-        if os.path.isdir(rclone_path):
-            rclone_path = os.path.join(rclone_path, "rclone.conf")
+        read_rclone_path = rclone_path
+        if os.path.isdir(read_rclone_path):
+            read_rclone_path = os.path.join(read_rclone_path, "rclone.conf")
+            st.warning(get_text(lang, "warning_rclone_isdir").format(path=rclone_path, new_path=read_rclone_path))
+            rclone_path = read_rclone_path
 
         rclone_content = ""
         if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
@@ -618,6 +622,7 @@ def show_dashboard():
         
         if st.button(get_text(lang, "btn_save_rclone"), disabled=disabled):
             try:
+                os.makedirs(os.path.dirname(rclone_path), exist_ok=True)
                 with open(rclone_path, "w") as f:
                     f.write(new_rclone_content)
                 st.success(get_text(lang, "status_rclone_saved"))
