@@ -361,6 +361,14 @@ def show_dashboard():
     def get_cached_candidates():
         return backup_engine.get_backup_candidates()
 
+    @st.cache_data
+    def _load_state_cached(path: str, mtime: float) -> dict:
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
     # Create Tabs
     tab_dash, tab_settings, tab_actions, tab_logs = st.tabs([
         "📊 " + get_text(lang, "tab_dashboard"), 
@@ -376,12 +384,12 @@ def show_dashboard():
         # Load State
         state_path = "/backups/backup_state.json"
         state = {}
-        if os.path.exists(state_path):
-            try:
-                with open(state_path, "r") as f:
-                    state = json.load(f)
-            except:
-                pass
+        try:
+            if os.path.exists(state_path):
+                mtime = os.path.getmtime(state_path)
+                state = _load_state_cached(state_path, mtime)
+        except OSError:
+            pass
         
         col1, col2, col3 = st.columns(3)
         with col1:
