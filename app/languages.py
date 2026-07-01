@@ -152,6 +152,7 @@ TRANSLATIONS = {
         "status_rclone_saved": "✅ Rclone config saved successfully!",
         "error_rclone_save": "❌ Error saving rclone config: {error}",
         "warning_ro_mount": "⚠️ Warning: File is Read-Only. Please remove ':ro' from docker-compose.yml",
+        "warning_rclone_isdir": "⚠️ Warning: The path `{path}` is a directory (likely due to a Docker volume mount). Saving configuration to `{new_path}` instead.",
         
         # UI Strings
         "unknown_permission_denied": "Unknown (Permission Denied)",
@@ -313,6 +314,7 @@ TRANSLATIONS = {
         "status_rclone_saved": "✅ Rclone ayarları başarıyla kaydedildi!",
         "error_rclone_save": "❌ Rclone ayarları kaydedilirken hata: {error}",
         "warning_ro_mount": "⚠️ Uyarı: Dosya Salt Okunur. Lütfen docker-compose.yml dosyasından ':ro' ibaresini kaldırın.",
+        "warning_rclone_isdir": "⚠️ Uyarı: `{path}` yolu bir dizin (muhtemelen Docker volume mount nedeniyle). Konfigürasyon bunun yerine `{new_path}` konumuna kaydediliyor.",
         
         # UI Strings
         "unknown_permission_denied": "Bilinmiyor (Erişim Reddedildi)",
@@ -474,6 +476,7 @@ TRANSLATIONS = {
         "status_rclone_saved": "✅ Rclone-Konfiguration erfolgreich gespeichert!",
         "error_rclone_save": "❌ Fehler beim Speichern: {error}",
         "warning_ro_mount": "⚠️ Warnung: Datei ist schreibgeschützt. Bitte entfernen Sie ':ro' aus docker-compose.yml",
+        "warning_rclone_isdir": "⚠️ Warnung: Der Pfad `{path}` ist ein Verzeichnis (wahrscheinlich aufgrund eines Docker-Volume-Mounts). Konfiguration wird stattdessen in `{new_path}` gespeichert.",
         
         # UI Strings
         "unknown_permission_denied": "Unbekannt (Zugriff verweigert)",
