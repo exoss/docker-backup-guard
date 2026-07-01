@@ -94,7 +94,7 @@ def check_password():
         user = st.session_state.get("username", "")
         password = st.session_state.get("password", "")
         
-        if user == env_user and password == env_pass:
+        if secrets.compare_digest(user, env_user) and secrets.compare_digest(password, env_pass):
             st.session_state["password_correct"] = True
             # Safe delete
             if "password" in st.session_state: del st.session_state["password"]
