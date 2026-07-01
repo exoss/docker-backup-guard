@@ -33,13 +33,14 @@ class APIHandler:
             return False
 
         try:
-            url = urllib.parse.urljoin(self.gotify_url.rstrip("/") + "/", f"message?token={self.gotify_token}")
+            url = urllib.parse.urljoin(self.gotify_url.rstrip("/") + "/", "message")
+            headers = {"X-Gotify-Key": self.gotify_token}
             payload = {
                 "title": title,
                 "message": message,
                 "priority": priority
             }
-            response = self.session.post(url, json=payload, timeout=10)
+            response = self.session.post(url, headers=headers, json=payload, timeout=10)
             response.raise_for_status()
             logger.info(f"Gotify notification sent: {title}")
             return True
@@ -186,13 +187,14 @@ class APIHandler:
 
         try:
             # Send a test message
-            api_url = urllib.parse.urljoin(url.rstrip("/") + "/", f"message?token={token}")
+            api_url = urllib.parse.urljoin(url.rstrip("/") + "/", "message")
+            headers = {"X-Gotify-Key": token}
             payload = {
                 "title": "Test Notification",
                 "message": "This is a test message from Docker Backup Guard.",
                 "priority": 5
             }
-            response = requests.post(api_url, json=payload, timeout=5)
+            response = requests.post(api_url, headers=headers, json=payload, timeout=5)
             response.raise_for_status()
             return True
         except requests.exceptions.RequestException as e:
