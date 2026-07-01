@@ -14,12 +14,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class APIHandler:
+    _shared_session = None
+
     def __init__(self):
         # Load .env file
         env_path = ".env/config.env" if os.path.isdir(".env") else ".env"
         load_dotenv(dotenv_path=env_path)
         
-        self.session = requests.Session()
+        if APIHandler._shared_session is None:
+            APIHandler._shared_session = requests.Session()
+        self.session = APIHandler._shared_session
         self.portainer_url = os.getenv("PORTAINER_URL")
         self.portainer_token = decrypt_value(os.getenv("PORTAINER_TOKEN"))
         self.gotify_url = os.getenv("GOTIFY_URL")

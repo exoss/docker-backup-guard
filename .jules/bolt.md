@@ -32,3 +32,11 @@
 ## 2024-07-01 - [Python String Translations and Encryption Initialization]
 **Learning:** In highly called utility functions (like `get_text` handling 150+ calls per UI render), nested `.get().get()` dictionary lookups create significant method call overhead in Python. Switching to a `try...except KeyError` block (EAFP paradigm) drastically improved translation lookup performance. Additionally, redundantly initializing `cryptography.fernet.Fernet` objects per value encrypted/decrypted is slow; wrapping it in an `@lru_cache(maxsize=1)` allows state persistence without breaking the functional signature.
 **Action:** Use `try...except KeyError` over `.get()` for dictionary lookups in hot paths where keys exist >90% of the time. When using cryptography libraries, explicitly check if initialization objects can be safely cached or reused instead of generating new instances per call.
+
+## 2024-03-24 - Share requests.Session() instances
+**Learning:** Creating a new `requests.Session()` object on every instantiation of an API handler defeats the purpose of connection pooling. The connection setup overhead (TCP handshake, TLS negotiation) for each API call causes significant performance degradation.
+**Action:** Always reuse a shared `requests.Session()` instance (e.g., using a class-level attribute or dependency injection) across multiple requests to leverage HTTP keep-alive and connection pooling.
+
+## 2024-03-24 - Streamlit configuration hot-reload performance
+**Learning:** Calling `load_dotenv` unconditionally in Streamlit app loops causes heavy disk I/O on every UI interaction. Just deleting the reload call breaks dynamic configuration updates (e.g. from the UI setup wizard).
+**Action:** Use `@st.cache_data` and pass the `os.stat(env_path).st_mtime` as an argument to bust the cache only when the `.env` file is actually modified, ensuring high performance while maintaining hot-reload functionality.
