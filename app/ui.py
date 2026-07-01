@@ -574,7 +574,7 @@ def show_dashboard():
                 else:
                     env_updates = {
                         "LANGUAGE": lang_options[new_lang_label],
-                        "SCHEDULE_ENABLE": str(new_schedule_enable).lower(),
+                        "SCHEDULE_ENABLE": "true" if new_schedule_enable else "false",
                         "SCHEDULE_TIME": new_schedule_time,
                         "PORTAINER_URL": new_portainer_url,
                         "PORTAINER_TOKEN": new_portainer_token,
