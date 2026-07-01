@@ -6,8 +6,10 @@ import app.security
 
 class TestSecurity(unittest.TestCase):
     def setUp(self):
-        # Clear lru_cache for _get_key
+        # Clear lru_cache for _get_key and _get_fernet
         app.security._get_key.cache_clear()
+        if hasattr(app.security, '_get_fernet'):
+            app.security._get_fernet.cache_clear()
 
     def test_get_key_file_unreadable_raises_exception(self):
         with patch('os.path.exists', return_value=True):

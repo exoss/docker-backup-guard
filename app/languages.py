@@ -484,7 +484,11 @@ TRANSLATIONS = {
     }
 }
 
+_en_trans = TRANSLATIONS["en"]
+
 def get_text(lang_code, key):
     """Retrieves translation for the given key and language code."""
-    lang = TRANSLATIONS.get(lang_code, TRANSLATIONS["en"])
-    return lang.get(key, f"[{key}]")
+    try:
+        return TRANSLATIONS[lang_code][key]
+    except KeyError:
+        return TRANSLATIONS.get(lang_code, _en_trans).get(key, f"[{key}]")
