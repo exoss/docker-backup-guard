@@ -9,6 +9,10 @@ import warnings
 from dotenv import load_dotenv
 from app.engine import BackupEngine
 
+# Performance optimization: Use a shared Session object for heartbeat pings
+# to enable TCP connection pooling and reuse TLS handshakes, reducing CPU and network overhead.
+_heartbeat_session = requests.Session()
+
 # Configure Logging
 log_dir = "logs"
 if not os.path.exists(log_dir):
@@ -58,7 +62,7 @@ def send_heartbeat(url):
         # verify=False: heartbeat URLs are typically self-hosted (Uptime Kuma) with self-signed certs
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-            requests.get(url, timeout=10, verify=False)
+            _heartbeat_session.get(url, timeout=10, verify=False)
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
 
