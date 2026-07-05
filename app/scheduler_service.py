@@ -21,6 +21,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("Scheduler")
 
+# Performance optimization: Use a shared requests.Session() to enable connection pooling.
+# This prevents TCP handshake and TLS negotiation overhead on every heartbeat ping.
+_heartbeat_session = requests.Session()
+
 def run_backup_job():
     logger.info("⏰ Scheduled Backup Started.")
     # Initialize Engine and Perform Backup
@@ -58,7 +62,7 @@ def send_heartbeat(url):
         # verify=False: heartbeat URLs are typically self-hosted (Uptime Kuma) with self-signed certs
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-            requests.get(url, timeout=10, verify=False)
+            _heartbeat_session.get(url, timeout=10, verify=False)
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
 
