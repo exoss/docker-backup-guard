@@ -42,7 +42,7 @@ TRANSLATIONS = {
         "label_rclone_content": "Rclone Configuration Content (rclone.conf)",
         "help_rclone_content_msg": "Paste your local rclone.conf content here. Need help generating it?",
         "help_rclone_content_hint": "Run `rclone config` on your local machine, then copy the file content.",
-        "warning_rclone_isdir": "⚠️ Warning: The path `{path}` is a directory (likely due to a Docker volume mount). Saving configuration to `{new_path}` instead.",
+        "error_invalid_rclone_path": "⛔ Error: The path `{path}` is a directory. Please provide a valid file path for rclone.conf (e.g., /app/rclone.conf).",
         
         "btn_save": "💾 Save Settings & Start",
         "error_missing_fields": "⛔ Error: Portainer URL, Token, and Backup Password are required!",
@@ -152,7 +152,7 @@ TRANSLATIONS = {
         "status_rclone_saved": "✅ Rclone config saved successfully!",
         "error_rclone_save": "❌ Error saving rclone config: {error}",
         "warning_ro_mount": "⚠️ Warning: File is Read-Only. Please remove ':ro' from docker-compose.yml",
-        "warning_rclone_isdir": "⚠️ Warning: The path `{path}` is a directory (likely due to a Docker volume mount). Saving configuration to `{new_path}` instead.",
+        "error_invalid_rclone_path": "⛔ Error: The path `{path}` is a directory. Please provide a valid file path for rclone.conf (e.g., /app/rclone.conf).",
         
         # UI Strings
         "unknown_permission_denied": "Unknown (Permission Denied)",
@@ -204,7 +204,7 @@ TRANSLATIONS = {
         "label_rclone_content": "Rclone Konfigürasyon İçeriği (rclone.conf)",
         "help_rclone_content_msg": "Yerel rclone.conf içeriğinizi buraya yapıştırın. Oluşturmak için yardıma mı ihtiyacınız var?",
         "help_rclone_content_hint": "Yerel makinenizde `rclone config` komutunu çalıştırın, ardından dosya içeriğini kopyalayın.",
-        "warning_rclone_isdir": "⚠️ Uyarı: `{path}` yolu bir dizin (muhtemelen Docker volume mount nedeniyle). Konfigürasyon bunun yerine `{new_path}` konumuna kaydediliyor.",
+        "error_invalid_rclone_path": "⛔ Hata: `{path}` yolu bir dizin. Lütfen rclone.conf için geçerli bir dosya yolu sağlayın (örn: /app/rclone.conf).",
         
         "btn_save": "💾 Ayarları Kaydet ve Başlat",
         "error_missing_fields": "⛔ Hata: Portainer URL, Token ve Yedekleme Şifresi zorunludur!",
@@ -314,7 +314,7 @@ TRANSLATIONS = {
         "status_rclone_saved": "✅ Rclone ayarları başarıyla kaydedildi!",
         "error_rclone_save": "❌ Rclone ayarları kaydedilirken hata: {error}",
         "warning_ro_mount": "⚠️ Uyarı: Dosya Salt Okunur. Lütfen docker-compose.yml dosyasından ':ro' ibaresini kaldırın.",
-        "warning_rclone_isdir": "⚠️ Uyarı: `{path}` yolu bir dizin (muhtemelen Docker volume mount nedeniyle). Konfigürasyon bunun yerine `{new_path}` konumuna kaydediliyor.",
+        "error_invalid_rclone_path": "⛔ Hata: `{path}` yolu bir dizin. Lütfen rclone.conf için geçerli bir dosya yolu sağlayın (örn: /app/rclone.conf).",
         
         # UI Strings
         "unknown_permission_denied": "Bilinmiyor (Erişim Reddedildi)",
@@ -366,7 +366,7 @@ TRANSLATIONS = {
         "label_rclone_content": "Rclone Konfigurationsinhalt (rclone.conf)",
         "help_rclone_content_msg": "Fügen Sie hier Ihren lokalen rclone.conf-Inhalt ein. Benötigen Sie Hilfe bei der Erstellung?",
         "help_rclone_content_hint": "Führen Sie `rclone config` auf Ihrem lokalen Computer aus und kopieren Sie dann den Dateiinhalt.",
-        "warning_rclone_isdir": "⚠️ Warnung: Der Pfad `{path}` ist ein Verzeichnis (wahrscheinlich aufgrund eines Docker-Volume-Mounts). Konfiguration wird stattdessen in `{new_path}` gespeichert.",
+        "error_invalid_rclone_path": "⛔ Fehler: Der Pfad `{path}` ist ein Verzeichnis. Bitte geben Sie einen gültigen Dateipfad für rclone.conf an (z.B. /app/rclone.conf).",
         
         "btn_save": "💾 Einstellungen speichern & starten",
         "error_missing_fields": "⛔ Fehler: Portainer URL, Token und Backup-Passwort sind erforderlich!",
@@ -476,7 +476,7 @@ TRANSLATIONS = {
         "status_rclone_saved": "✅ Rclone-Konfiguration erfolgreich gespeichert!",
         "error_rclone_save": "❌ Fehler beim Speichern: {error}",
         "warning_ro_mount": "⚠️ Warnung: Datei ist schreibgeschützt. Bitte entfernen Sie ':ro' aus docker-compose.yml",
-        "warning_rclone_isdir": "⚠️ Warnung: Der Pfad `{path}` ist ein Verzeichnis (wahrscheinlich aufgrund eines Docker-Volume-Mounts). Konfiguration wird stattdessen in `{new_path}` gespeichert.",
+        "error_invalid_rclone_path": "⛔ Fehler: Der Pfad `{path}` ist ein Verzeichnis. Bitte geben Sie einen gültigen Dateipfad für rclone.conf an (z.B. /app/rclone.conf).",
         
         # UI Strings
         "unknown_permission_denied": "Unbekannt (Zugriff verweigert)",
