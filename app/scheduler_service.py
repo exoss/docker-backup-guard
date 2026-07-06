@@ -47,6 +47,9 @@ def _prepare_heartbeat_url(url):
             return url
     return url
 
+# Use a session to enable TCP connection pooling and reuse TLS handshakes for performance
+_heartbeat_session = requests.Session()
+
 def send_heartbeat(url):
     """
     Sends a heartbeat ping to the specified URL.
@@ -58,7 +61,7 @@ def send_heartbeat(url):
         # verify=False: heartbeat URLs are typically self-hosted (Uptime Kuma) with self-signed certs
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-            requests.get(url, timeout=10, verify=False)
+            _heartbeat_session.get(url, timeout=10, verify=False)
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
 
