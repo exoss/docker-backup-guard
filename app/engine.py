@@ -36,6 +36,7 @@ EXCLUDED_PATHS = frozenset(
 TRANSITION_STATES = frozenset(["restarting", "paused", "dead"])
 VALID_MOUNT_TYPES = frozenset(["bind", "volume"])
 
+_shared_engine_session = requests.Session()
 
 class BackupEngine:
     def __init__(self):
@@ -148,7 +149,7 @@ class BackupEngine:
             if message:
                 try:
                     self._log(f"Sending Healthcheck (POST) to {final_url}...")
-                    requests.post(
+                    _shared_engine_session.post(
                         final_url, data=str(message).encode("utf-8"), timeout=10
                     )
                     self._log("Healthcheck ping successful.")
@@ -191,7 +192,7 @@ class BackupEngine:
             self._log(f"Sending Healthcheck (GET) to {final_url}...")
             # Verify=False is often needed for self-hosted Uptime Kuma with self-signed certs
             # We enable it by default but could catch SSLError
-            response = requests.get(final_url, timeout=10)
+            response = _shared_engine_session.get(final_url, timeout=10)
 
             if response.status_code == 200:
                 self._log("Healthcheck ping successful.")
@@ -209,7 +210,7 @@ class BackupEngine:
                     warnings.simplefilter(
                         "ignore", urllib3.exceptions.InsecureRequestWarning
                     )
-                    requests.get(final_url, timeout=10, verify=False)
+                    _shared_engine_session.get(final_url, timeout=10, verify=False)
                 self._log("Healthcheck ping successful (verify=False).")
             except Exception as e:
                 self._log(f"Healthcheck ping failed (verify=False): {e}", "WARNING")
