@@ -21,8 +21,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("Scheduler")
 
-_heartbeat_session = requests.Session()
-
 def run_backup_job():
     logger.info("⏰ Scheduled Backup Started.")
     # Initialize Engine and Perform Backup
@@ -60,23 +58,23 @@ def send_heartbeat(url):
         # verify=False: heartbeat URLs are typically self-hosted (Uptime Kuma) with self-signed certs
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-            _heartbeat_session.get(url, timeout=10, verify=False)
+            requests.get(url, timeout=10, verify=False)
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")
 
 def scheduler_loop():
     logger.info("Scheduler Service Started.")
-    
+
     # State tracking to detect config changes
     current_schedule_enabled = False
     current_schedule_time = ""
     current_heartbeat_interval = 0
     current_heartbeat_url = ""
     last_env_mtime = 0
-    
+
     # Initial load delay
     time.sleep(2)
-    
+
     while True:
         try:
             # 1. Reload Configuration
@@ -92,37 +90,37 @@ def scheduler_loop():
             if mtime != last_env_mtime:
                 load_dotenv(dotenv_path=env_path, override=True)
                 last_env_mtime = mtime
-            
+
             # 2. Read Backup Settings
             enabled = os.getenv("SCHEDULE_ENABLE", "false").lower() == "true"
             backup_time = os.getenv("SCHEDULE_TIME", "03:00")
-            
+
             # 3. Read Heartbeat Settings
             hb_url = os.getenv("HEARTBEAT_URL", "").strip()
             try:
                 hb_interval = int(os.getenv("HEARTBEAT_INTERVAL", "0"))
             except ValueError:
                 hb_interval = 0
-            
+
             # 4. Check for Changes
             config_changed = (
-                enabled != current_schedule_enabled or 
+                enabled != current_schedule_enabled or
                 backup_time != current_schedule_time or
                 hb_url != current_heartbeat_url or
                 hb_interval != current_heartbeat_interval
             )
-            
+
             if config_changed:
                 logger.info("🔄 Configuration changed. Updating scheduler...")
                 schedule.clear()
-                
+
                 # --- Setup Backup Job ---
                 if enabled:
                     schedule.every().day.at(backup_time).do(run_backup_job)
                     logger.info(f"📅 Backup Scheduled for {backup_time}")
                 else:
                     logger.info("⏸️ Backup Schedule Disabled.")
-                
+
                 # --- Setup Heartbeat Job ---
                 if hb_url and hb_interval > 0:
                     prepared_url = _prepare_heartbeat_url(hb_url)
@@ -142,10 +140,10 @@ def scheduler_loop():
 
             # 5. Run Pending Jobs
             schedule.run_pending()
-            
+
             # Sleep to prevent high CPU usage
             time.sleep(10)
-            
+
         except Exception as e:
             logger.error(f"Scheduler Loop Error: {e}")
             time.sleep(60)

@@ -18,8 +18,6 @@ from app.languages import get_text
 from app.security import decrypt_value
 
 # Module-level constants for performance optimizations (O(1) lookups and memory efficiency)
-_shared_engine_session = requests.Session()
-
 EXCLUDED_PATHS = frozenset(
     [
         "/",
@@ -150,7 +148,7 @@ class BackupEngine:
             if message:
                 try:
                     self._log(f"Sending Healthcheck (POST) to {final_url}...")
-                    _shared_engine_session.post(
+                    requests.post(
                         final_url, data=str(message).encode("utf-8"), timeout=10
                     )
                     self._log("Healthcheck ping successful.")
@@ -193,7 +191,7 @@ class BackupEngine:
             self._log(f"Sending Healthcheck (GET) to {final_url}...")
             # Verify=False is often needed for self-hosted Uptime Kuma with self-signed certs
             # We enable it by default but could catch SSLError
-            response = _shared_engine_session.get(final_url, timeout=10)
+            response = requests.get(final_url, timeout=10)
 
             if response.status_code == 200:
                 self._log("Healthcheck ping successful.")
@@ -211,7 +209,7 @@ class BackupEngine:
                     warnings.simplefilter(
                         "ignore", urllib3.exceptions.InsecureRequestWarning
                     )
-                    _shared_engine_session.get(final_url, timeout=10, verify=False)
+                    requests.get(final_url, timeout=10, verify=False)
                 self._log("Healthcheck ping successful (verify=False).")
             except Exception as e:
                 self._log(f"Healthcheck ping failed (verify=False): {e}", "WARNING")
