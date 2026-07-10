@@ -8,6 +8,7 @@ import concurrent.futures
 import shutil
 import subprocess
 import requests
+
 import urllib.parse
 from datetime import datetime
 from dotenv import load_dotenv
@@ -16,6 +17,10 @@ import warnings
 from app.api_handlers import APIHandler
 from app.languages import get_text
 from app.security import decrypt_value
+
+# Performance Optimization: Use a shared requests.Session() for connection pooling.
+# This prevents TCP handshake and TLS negotiation overhead on repeated API calls.
+_shared_engine_session = requests.Session()
 
 # Module-level constants for performance optimizations (O(1) lookups and memory efficiency)
 EXCLUDED_PATHS = frozenset(
@@ -148,7 +153,7 @@ class BackupEngine:
             if message:
                 try:
                     self._log(f"Sending Healthcheck (POST) to {final_url}...")
-                    requests.post(
+                    _shared_engine_session.post(
                         final_url, data=str(message).encode("utf-8"), timeout=10
                     )
                     self._log("Healthcheck ping successful.")
@@ -191,7 +196,7 @@ class BackupEngine:
             self._log(f"Sending Healthcheck (GET) to {final_url}...")
             # Verify=False is often needed for self-hosted Uptime Kuma with self-signed certs
             # We enable it by default but could catch SSLError
-            response = requests.get(final_url, timeout=10)
+            response = _shared_engine_session.get(final_url, timeout=10)
 
             if response.status_code == 200:
                 self._log("Healthcheck ping successful.")
@@ -209,7 +214,7 @@ class BackupEngine:
                     warnings.simplefilter(
                         "ignore", urllib3.exceptions.InsecureRequestWarning
                     )
-                    requests.get(final_url, timeout=10, verify=False)
+                    _shared_engine_session.get(final_url, timeout=10, verify=False)
                 self._log("Healthcheck ping successful (verify=False).")
             except Exception as e:
                 self._log(f"Healthcheck ping failed (verify=False): {e}", "WARNING")
