@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 import urllib3
 import warnings
 from app.api_handlers import APIHandler
+from app.config import get_env_bool
 from app.languages import get_text
 from app.security import decrypt_value
 
@@ -66,6 +67,7 @@ class BackupEngine:
         # Decrypt sensitive fields
         self.backup_password = decrypt_value(os.getenv("BACKUP_PASSWORD"))
         self.healthcheck_url = os.getenv("HEALTHCHECK_URL")
+        self.verify_ssl = get_env_bool("VERIFY_SSL", False)
         self.portainer_api_configured = bool(
             os.getenv("PORTAINER_URL") and os.getenv("PORTAINER_TOKEN")
         )
@@ -153,9 +155,24 @@ class BackupEngine:
             if message:
                 try:
                     self._log(f"Sending Healthcheck (POST) to {final_url}...")
-                    _shared_engine_session.post(
-                        final_url, data=str(message).encode("utf-8"), timeout=10
-                    )
+                    if self.verify_ssl:
+                        _shared_engine_session.post(
+                            final_url,
+                            data=str(message).encode("utf-8"),
+                            timeout=10,
+                            verify=True,
+                        )
+                    else:
+                        with warnings.catch_warnings():
+                            warnings.simplefilter(
+                                "ignore", urllib3.exceptions.InsecureRequestWarning
+                            )
+                            _shared_engine_session.post(
+                                final_url,
+                                data=str(message).encode("utf-8"),
+                                timeout=10,
+                                verify=False,
+                            )
                     self._log("Healthcheck ping successful.")
                     return
                 except Exception as e:
@@ -194,9 +211,16 @@ class BackupEngine:
         # --- Generic Request (GET) ---
         try:
             self._log(f"Sending Healthcheck (GET) to {final_url}...")
-            # Verify=False is often needed for self-hosted Uptime Kuma with self-signed certs
-            # We enable it by default but could catch SSLError
-            response = _shared_engine_session.get(final_url, timeout=10)
+            if self.verify_ssl:
+                response = _shared_engine_session.get(final_url, timeout=10, verify=True)
+            else:
+                with warnings.catch_warnings():
+                    warnings.simplefilter(
+                        "ignore", urllib3.exceptions.InsecureRequestWarning
+                    )
+                    response = _shared_engine_session.get(
+                        final_url, timeout=10, verify=False
+                    )
 
             if response.status_code == 200:
                 self._log("Healthcheck ping successful.")
@@ -205,21 +229,29 @@ class BackupEngine:
                     f"Healthcheck ping returned status code: {response.status_code}",
                     "WARNING",
                 )
-        except requests.exceptions.SSLError:
-            self._log(
-                "SSL Error on Healthcheck. Retrying with verify=False...", "WARNING"
-            )
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter(
-                        "ignore", urllib3.exceptions.InsecureRequestWarning
-                    )
-                    _shared_engine_session.get(final_url, timeout=10, verify=False)
-                self._log("Healthcheck ping successful (verify=False).")
-            except Exception as e:
-                self._log(f"Healthcheck ping failed (verify=False): {e}", "WARNING")
+        except requests.exceptions.SSLError as e:
+            self._log(f"Healthcheck SSL verification failed: {e}", "WARNING")
         except Exception as e:
             self._log(f"Healthcheck ping failed: {e}", "WARNING")
+
+    def _run_encrypted_7z(
+        self, archive_path, source_path, cwd=None, extra_args=None, timeout=None
+    ):
+        """Runs 7z while providing the password via stdin instead of argv."""
+        cmd = ["7z", "a", "-t7z", "-mx=3", "-mhe=on"]
+        if extra_args:
+            cmd.extend(extra_args)
+        cmd.extend(["-p", archive_path, source_path])
+
+        password_input = f"{self.backup_password}\n{self.backup_password}\n"
+        return subprocess.run(
+            cmd,
+            cwd=cwd,
+            input=password_input,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
 
     def _update_state_file(self, status, size_bytes=0, protected_count=0):
         """Updates the JSON state file with KPI data."""
@@ -433,18 +465,11 @@ class BackupEngine:
 
             self._log(f"Compressing and Encrypting to {master_archive_name}...")
 
-            cmd = [
-                "7z",
-                "a",
-                "-t7z",
-                "-mx=3",
-                "-mhe=on",
-                f"-p{self.backup_password}",
+            result = self._run_encrypted_7z(
                 master_archive_path,
                 backup_path,
-            ]
-
-            result = subprocess.run(cmd, capture_output=True, text=True)
+                timeout=600,
+            )
 
             if result.returncode != 0:
                 self._log(f"Compression Error: {result.stderr}", "ERROR")
@@ -794,20 +819,12 @@ class BackupEngine:
             if progress_callback:
                 progress_callback(get_text(lang, "progress_compressing"))
 
-            cmd_master = [
-                "7z",
-                "a",
-                "-t7z",
-                "-mx=3",
-                "-mmt=2",
-                "-mhe=on",
-                f"-p{self.backup_password}",
+            result_master = self._run_encrypted_7z(
                 master_archive_path,
                 ".",
-            ]
-
-            result_master = subprocess.run(
-                cmd_master, cwd=temp_dir, capture_output=True, text=True
+                cwd=temp_dir,
+                extra_args=["-mmt=2"],
+                timeout=1800,
             )
 
             if result_master.returncode != 0:

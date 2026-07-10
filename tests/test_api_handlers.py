@@ -1,4 +1,3 @@
-import os
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -10,7 +9,7 @@ class TestAPIHandlers(unittest.TestCase):
     @patch('app.api_handlers.requests.Session')
     @patch.dict('os.environ', {'GOTIFY_URL': 'http://gotify.example.com', 'GOTIFY_TOKEN': 'enc_token'})
     @patch('app.api_handlers.decrypt_value', return_value='test_token')
-    def test_send_gotify_notification_secure_headers(self, mock_decrypt, mock_session_class):
+    def test_send_gotify_notification_secure_headers(self, _mock_decrypt, mock_session_class):
         # Local mock of the Session instance
         mock_session_instance = MagicMock()
         mock_session_class.return_value = mock_session_instance
@@ -45,3 +44,19 @@ class TestAPIHandlers(unittest.TestCase):
         # Verify header contains token
         self.assertIn("headers", kwargs)
         self.assertEqual(kwargs["headers"]["X-Gotify-Key"], "test_token")
+
+    @patch('app.api_handlers.get_env_bool', return_value=True)
+    @patch('app.api_handlers.requests.get')
+    def test_portainer_connection_respects_verify_ssl(self, mock_get, _mock_get_env_bool):
+        from app.api_handlers import APIHandler
+
+        response = MagicMock()
+        response.json.return_value = [{"Id": 1}]
+        mock_get.return_value = response
+
+        result = APIHandler.test_portainer_connection('https://portainer.example.com', 'test_token')
+
+        self.assertEqual(result, [{"Id": 1}])
+        mock_get.assert_called_once()
+        _, kwargs = mock_get.call_args
+        self.assertTrue(kwargs["verify"])

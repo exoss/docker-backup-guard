@@ -8,6 +8,8 @@ import urllib.parse
 import urllib3
 import warnings
 from dotenv import load_dotenv
+from app.config import get_env_bool
+from app.engine import BackupEngine
 # Performance Optimization: Use a shared requests.Session() for connection pooling.
 # This prevents TCP handshake and TLS negotiation overhead on repeated heartbeat calls.
 _heartbeat_session = requests.Session()
@@ -57,11 +59,15 @@ def send_heartbeat(url):
     This runs independently of the backup job to signal 'System is Alive'.
     """
     try:
-        # Send Request (GET)
-        # verify=False: heartbeat URLs are typically self-hosted (Uptime Kuma) with self-signed certs
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-            response = _heartbeat_session.get(url, timeout=10, verify=False)
+        verify_ssl = get_env_bool("VERIFY_SSL", False)
+        if verify_ssl:
+            response = _heartbeat_session.get(url, timeout=10, verify=True)
+        else:
+            with warnings.catch_warnings():
+                warnings.simplefilter(
+                    "ignore", urllib3.exceptions.InsecureRequestWarning
+                )
+                response = _heartbeat_session.get(url, timeout=10, verify=False)
         response.raise_for_status()
     except Exception as e:
         logger.warning(f"Heartbeat failed: {e}")

@@ -95,13 +95,7 @@ def check_password():
     env_pass = decrypt_value(os.getenv("WEB_UI_PASSWORD"))
 
     if not env_user or not env_pass:
-        # If setup is done but no creds, maybe legacy? Default to admin/admin or let pass?
-        # Safe default: if BACKUP_PASSWORD exists (setup done), but no web creds, enforce admin/admin
-        if os.getenv("BACKUP_PASSWORD"):
-            env_user = "admin"
-            env_pass = "admin"
-        else:
-            return False # Should go to setup
+        return False
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
@@ -202,6 +196,12 @@ def show_setup_wizard():
             tz = st.text_input(get_text(lang, "label_timezone"), value="Europe/Berlin")
         with col8:
             healthcheck_url = st.text_input(get_text(lang, "label_healthcheck"), placeholder="https://hc-ping.com/...")
+
+        verify_ssl = st.checkbox(
+            get_text(lang, "label_verify_ssl"),
+            value=False,
+            help=get_text(lang, "help_verify_ssl"),
+        )
         
         col_h1, col_h2 = st.columns(2)
         with col_h1:
@@ -327,6 +327,7 @@ def show_setup_wizard():
                     "RETENTION_DAYS": retention,
                     "TZ": tz,
                     "HEALTHCHECK_URL": healthcheck_url,
+                    "VERIFY_SSL": "true" if verify_ssl else "false",
                     "HEARTBEAT_URL": heartbeat_url,
                     "HEARTBEAT_INTERVAL": heartbeat_interval,
                     "RCLONE_CONFIG_PATH": real_rclone_path,
@@ -518,6 +519,12 @@ def show_dashboard():
                     value=os.getenv("HEALTHCHECK_URL", ""),
                     disabled=disabled,
                 )
+                new_verify_ssl = st.checkbox(
+                    get_text(lang, "label_verify_ssl"),
+                    value=os.getenv("VERIFY_SSL", "false").lower() == "true",
+                    disabled=disabled,
+                    help=get_text(lang, "help_verify_ssl"),
+                )
 
             st.markdown("---")
             st.subheader(get_text(lang, "header_automation"))
@@ -606,6 +613,7 @@ def show_dashboard():
                         "RETENTION_DAYS": new_retention,
                         "TZ": new_tz,
                         "HEALTHCHECK_URL": new_healthcheck_url,
+                        "VERIFY_SSL": "true" if new_verify_ssl else "false",
                         "HEARTBEAT_URL": new_heartbeat_url,
                         "HEARTBEAT_INTERVAL": new_heartbeat_interval,
                         "WEB_UI_USERNAME": new_web_ui_username,
@@ -759,9 +767,11 @@ def run():
     
     # Check if critical configuration exists
     backup_password = os.getenv("BACKUP_PASSWORD")
+    web_ui_user = decrypt_value(os.getenv("WEB_UI_USERNAME"))
+    web_ui_password = decrypt_value(os.getenv("WEB_UI_PASSWORD"))
     
-    # If password is missing or empty, show setup
-    if not backup_password:
+    # If setup is incomplete, redirect to setup wizard instead of relying on weak defaults.
+    if not backup_password or not web_ui_user or not web_ui_password:
         show_setup_wizard()
         return
 

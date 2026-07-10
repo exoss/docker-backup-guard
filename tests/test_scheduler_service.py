@@ -8,6 +8,7 @@ for mod in ['docker', 'dotenv', 'requests', 'urllib3', 'schedule', 'streamlit']:
         sys.modules[mod] = MagicMock()
 
 from app.scheduler_service import _prepare_heartbeat_url, send_heartbeat
+from app import scheduler_service
 
 class TestSchedulerService(unittest.TestCase):
     def test_prepare_heartbeat_url_empty(self):
@@ -33,6 +34,15 @@ class TestSchedulerService(unittest.TestCase):
         url = "http://uptime.kuma/api/push/xyz"
         self.assertEqual(_prepare_heartbeat_url(url), url)
 
+    @patch('app.scheduler_service.BackupEngine')
+    def test_run_backup_job_invokes_engine(self, mock_engine_class):
+        engine_instance = mock_engine_class.return_value
+
+        scheduler_service.run_backup_job()
+
+        mock_engine_class.assert_called_once_with()
+        engine_instance.perform_backup.assert_called_once_with()
+
     @patch('app.scheduler_service.logger.warning')
     @patch('app.scheduler_service._heartbeat_session.get')
     def test_send_heartbeat_success(self, mock_get, mock_warning):
@@ -43,6 +53,20 @@ class TestSchedulerService(unittest.TestCase):
         send_heartbeat("http://example.com/heartbeat")
 
         mock_get.assert_called_once_with("http://example.com/heartbeat", timeout=10, verify=False)
+        response.raise_for_status.assert_called_once()
+        self.assertFalse(mock_warning.called)
+
+    @patch('app.scheduler_service.get_env_bool', return_value=True)
+    @patch('app.scheduler_service.logger.warning')
+    @patch('app.scheduler_service._heartbeat_session.get')
+    def test_send_heartbeat_respects_verify_ssl(self, mock_get, mock_warning, _mock_get_env_bool):
+        response = MagicMock()
+        response.status_code = 200
+        mock_get.return_value = response
+
+        send_heartbeat("https://example.com/heartbeat")
+
+        mock_get.assert_called_once_with("https://example.com/heartbeat", timeout=10, verify=True)
         response.raise_for_status.assert_called_once()
         self.assertFalse(mock_warning.called)
 

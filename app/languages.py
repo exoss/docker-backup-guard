@@ -31,6 +31,8 @@ TRANSLATIONS = {
         "help_retention": "Duration to keep old backups.",
         "label_timezone": "Timezone",
         "label_healthcheck": "Healthcheck URL (Optional)",
+        "label_verify_ssl": "Verify TLS/SSL Certificates",
+        "help_verify_ssl": "Enable strict certificate verification for Portainer, heartbeat, and healthcheck requests.",
         
         "subheader_rclone": "☁️ Rclone Settings",
         "label_rclone_path": "Rclone Config Path",
@@ -193,6 +195,8 @@ TRANSLATIONS = {
         "help_retention": "Eski yedeklerin silinme süresi.",
         "label_timezone": "Zaman Dilimi",
         "label_healthcheck": "Healthcheck URL (Opsiyonel)",
+        "label_verify_ssl": "TLS/SSL Sertifikalarını Doğrula",
+        "help_verify_ssl": "Portainer, heartbeat ve healthcheck isteklerinde sertifika doğrulamasını etkinleştirir.",
         
         "subheader_rclone": "☁️ Rclone Ayarları",
         "label_rclone_path": "Rclone Konfigürasyon Yolu",
@@ -355,6 +359,8 @@ TRANSLATIONS = {
         "help_retention": "Dauer, für die alte Backups aufbewahrt werden.",
         "label_timezone": "Zeitzone",
         "label_healthcheck": "Healthcheck URL (Optional)",
+        "label_verify_ssl": "TLS/SSL-Zertifikate prüfen",
+        "help_verify_ssl": "Aktiviert die strikte Zertifikatsprüfung für Portainer-, Heartbeat- und Healthcheck-Anfragen.",
         
         "subheader_rclone": "☁️ Rclone Einstellungen",
         "label_rclone_path": "Rclone Konfigurationspfad",

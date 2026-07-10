@@ -4,7 +4,7 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
 ![Rclone](https://img.shields.io/badge/Rclone-333333?style=for-the-badge&logo=rclone&logoColor=white)
-![Version](https://img.shields.io/badge/version-v1.2.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-v1.2.2-blue?style=for-the-badge)
 
 **Docker Backup Guard** is a robust, user-friendly backup automation tool for Docker containers. It combines a modern web interface with powerful background workers to ensure your data is safe, encrypted, and synced to the cloud.
 
@@ -140,6 +140,7 @@ The application manages these automatically via the UI, but you can manually edi
 | `GOTIFY_URL` | Gotify server URL for push notifications | — |
 | `GOTIFY_TOKEN` | Gotify app token | — |
 | `HEALTHCHECK_URL` | Healthcheck.io or Uptime Kuma push URL | — |
+| `VERIFY_SSL` | `true` / `false` for strict TLS certificate verification on outbound monitoring/API requests | `false` |
 | `HEARTBEAT_URL` | Uptime Kuma push URL for periodic "system alive" pings | — |
 | `HEARTBEAT_INTERVAL` | Minutes between heartbeat pings (0 = disabled) | `0` |
 | `SCHEDULE_ENABLE` | `true` / `false` to enable daily backups | `false` |
@@ -168,6 +169,7 @@ If you don't have an `rclone.conf` yet:
 *   **Web UI Access:** Protected by a login screen (default credentials set during setup).
 *   **Encryption:** Sensitive environment variables (Tokens, Passwords) are encrypted at rest using `Fernet` (symmetric encryption).
 *   **Backup Encryption:** Archives are encrypted with AES-256. You **must** remember your backup password to restore data!
+*   **TLS Verification:** You can enable strict certificate validation for Portainer, heartbeat, and healthcheck requests with `VERIFY_SSL=true`.
 
 ---
 

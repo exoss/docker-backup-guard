@@ -53,5 +53,28 @@ class TestBackupEngine(unittest.TestCase):
         self.assertEqual(mock_sleep.call_count, 3)
         mock_sleep.assert_called_with(5)
 
+    @patch('app.engine.subprocess.run')
+    def test_run_encrypted_7z_uses_stdin_for_password(self, mock_run):
+        self.engine.backup_password = "super-secret"
+
+        self.engine._run_encrypted_7z(
+            "/backups/archive.7z",
+            ".",
+            cwd="/tmp/source",
+            extra_args=["-mmt=2"],
+            timeout=1800,
+        )
+
+        mock_run.assert_called_once()
+        _, kwargs = mock_run.call_args
+        cmd = kwargs["args"] if "args" in kwargs else mock_run.call_args[0][0]
+        self.assertIn("-p", cmd)
+        self.assertNotIn("super-secret", " ".join(cmd))
+        self.assertEqual(kwargs["cwd"], "/tmp/source")
+        self.assertEqual(kwargs["timeout"], 1800)
+        self.assertEqual(kwargs["input"], "super-secret\nsuper-secret\n")
+        self.assertTrue(kwargs["capture_output"])
+        self.assertTrue(kwargs["text"])
+
 if __name__ == '__main__':
     unittest.main()

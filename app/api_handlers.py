@@ -6,6 +6,7 @@ import logging
 import urllib3
 import re
 from dotenv import load_dotenv
+from app.config import get_env_bool
 from app.security import decrypt_value
 import warnings
 
@@ -29,6 +30,7 @@ class APIHandler:
         self.gotify_url = os.getenv("GOTIFY_URL")
         self.gotify_token = decrypt_value(os.getenv("GOTIFY_TOKEN"))
         self.healthcheck_url = os.getenv("HEALTHCHECK_URL")
+        self.verify_ssl = get_env_bool("VERIFY_SSL", False)
 
     def send_gotify_notification(self, title, message, priority=5):
         """Sends notification via Gotify."""
@@ -44,7 +46,13 @@ class APIHandler:
                 "message": message,
                 "priority": priority
             }
-            response = self.session.post(url, headers=headers, json=payload, timeout=10)
+            response = self.session.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=10,
+                verify=self.verify_ssl,
+            )
             response.raise_for_status()
             logger.info(f"Gotify notification sent: {title}")
             return True
@@ -63,12 +71,12 @@ class APIHandler:
             if status == "fail":
                 url = f"{url}/fail"
             
-            self.session.get(url, timeout=10)
+            self.session.get(url, timeout=10, verify=self.verify_ssl)
             logger.info(f"Healthcheck ping sent ({status}).")
         except Exception as e:
             logger.error(f"Healthcheck ping error: {e}")
 
-    def download_portainer_backup(self, output_path, password=None):
+    def download_portainer_backup(self, output_path, _password=None):
         """
         Downloads Portainer configuration backup via API.
         POST /api/backup
@@ -90,10 +98,28 @@ class APIHandler:
             
         try:
             logger.info(f"Requesting Portainer backup from {url}...")
-            # verify=False is used because local Portainer often has self-signed certs
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-                response = self.session.post(url, headers=headers, json=payload, stream=True, timeout=60, verify=False)
+            if self.verify_ssl:
+                response = self.session.post(
+                    url,
+                    headers=headers,
+                    json=payload,
+                    stream=True,
+                    timeout=60,
+                    verify=True,
+                )
+            else:
+                with warnings.catch_warnings():
+                    warnings.simplefilter(
+                        "ignore", urllib3.exceptions.InsecureRequestWarning
+                    )
+                    response = self.session.post(
+                        url,
+                        headers=headers,
+                        json=payload,
+                        stream=True,
+                        timeout=60,
+                        verify=False,
+                    )
             
             # Log status code and headers for debugging
             logger.info(f"Portainer Backup Response Status: {response.status_code}")
@@ -168,15 +194,22 @@ class APIHandler:
             return None
 
         headers = {"X-API-Key": token}
+        verify_ssl = get_env_bool("VERIFY_SSL", False)
         try:
             # Ensure URL doesn't end with slash
             base_url = url.rstrip("/")
             # Fetch endpoints list as a test
             api_url = f"{base_url}/api/endpoints"
-            # verify=False is used because local Portainer often has self-signed certs
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
-                response = requests.get(api_url, headers=headers, timeout=5, verify=False)
+            if verify_ssl:
+                response = requests.get(api_url, headers=headers, timeout=5, verify=True)
+            else:
+                with warnings.catch_warnings():
+                    warnings.simplefilter(
+                        "ignore", urllib3.exceptions.InsecureRequestWarning
+                    )
+                    response = requests.get(
+                        api_url, headers=headers, timeout=5, verify=False
+                    )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -193,12 +226,19 @@ class APIHandler:
             # Send a test message
             api_url = urllib.parse.urljoin(url.rstrip("/") + "/", "message")
             headers = {"X-Gotify-Key": token}
+            verify_ssl = get_env_bool("VERIFY_SSL", False)
             payload = {
                 "title": "Test Notification",
                 "message": "This is a test message from Docker Backup Guard.",
                 "priority": 5
             }
-            response = requests.post(api_url, headers=headers, json=payload, timeout=5)
+            response = requests.post(
+                api_url,
+                headers=headers,
+                json=payload,
+                timeout=5,
+                verify=verify_ssl,
+            )
             response.raise_for_status()
             return True
         except requests.exceptions.RequestException as e:
