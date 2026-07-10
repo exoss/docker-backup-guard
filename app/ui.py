@@ -14,7 +14,7 @@ from app.security import encrypt_value, decrypt_value
 
 # Constants
 ENV_FILE = ".env"
-APP_VERSION = "v1.2.2"
+APP_VERSION = "v1.2.3"
 
 # Module-level tuple to avoid repeated list allocation on every save_env call
 SENSITIVE_KEYS = ("PORTAINER_TOKEN", "GOTIFY_TOKEN", "BACKUP_PASSWORD", "WEB_UI_PASSWORD", "WEB_UI_USERNAME")
