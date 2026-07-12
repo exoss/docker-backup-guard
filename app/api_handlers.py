@@ -17,14 +17,18 @@ logger = logging.getLogger(__name__)
 class APIHandler:
     _shared_session = None
 
+    @classmethod
+    def _get_session(cls):
+        if cls._shared_session is None:
+            cls._shared_session = requests.Session()
+        return cls._shared_session
+
     def __init__(self):
         # Load .env file
         env_path = ".env/config.env" if os.path.isdir(".env") else ".env"
         load_dotenv(dotenv_path=env_path)
         
-        if APIHandler._shared_session is None:
-            APIHandler._shared_session = requests.Session()
-        self.session = APIHandler._shared_session
+        self.session = self._get_session()
         self.portainer_url = os.getenv("PORTAINER_URL")
         self.portainer_token = decrypt_value(os.getenv("PORTAINER_TOKEN"))
         self.gotify_url = os.getenv("GOTIFY_URL")
@@ -187,8 +191,8 @@ class APIHandler:
                 logger.error(f"API Response: {e.response.text}")
             return None
 
-    @staticmethod
-    def test_portainer_connection(url, token):
+    @classmethod
+    def test_portainer_connection(cls, url, token):
         """Tests connectivity to Portainer API using provided credentials."""
         if not url or not token:
             return None
@@ -200,14 +204,15 @@ class APIHandler:
             base_url = url.rstrip("/")
             # Fetch endpoints list as a test
             api_url = f"{base_url}/api/endpoints"
+            session = cls._get_session()
             if verify_ssl:
-                response = requests.get(api_url, headers=headers, timeout=5, verify=True)
+                response = session.get(api_url, headers=headers, timeout=5, verify=True)
             else:
                 with warnings.catch_warnings():
                     warnings.simplefilter(
                         "ignore", urllib3.exceptions.InsecureRequestWarning
                     )
-                    response = requests.get(
+                    response = session.get(
                         api_url, headers=headers, timeout=5, verify=False
                     )
             response.raise_for_status()
@@ -216,8 +221,8 @@ class APIHandler:
             logger.error(f"Portainer Connection Test failed: {e}")
             return None
 
-    @staticmethod
-    def test_gotify_connection(url, token):
+    @classmethod
+    def test_gotify_connection(cls, url, token):
         """Tests connectivity to Gotify API using provided credentials."""
         if not url or not token:
             return False
@@ -232,7 +237,8 @@ class APIHandler:
                 "message": "This is a test message from Docker Backup Guard.",
                 "priority": 5
             }
-            response = requests.post(
+            session = cls._get_session()
+            response = session.post(
                 api_url,
                 headers=headers,
                 json=payload,
