@@ -6,6 +6,10 @@ from unittest.mock import patch, MagicMock
 # Instead, we will patch them where they are used.
 
 class TestAPIHandlers(unittest.TestCase):
+    def setUp(self):
+        from app.api_handlers import APIHandler
+        APIHandler._shared_session = None
+
     @patch('app.api_handlers.requests.Session')
     @patch.dict('os.environ', {'GOTIFY_URL': 'http://gotify.example.com', 'GOTIFY_TOKEN': 'enc_token'})
     @patch('app.api_handlers.decrypt_value', return_value='test_token')
@@ -30,13 +34,16 @@ class TestAPIHandlers(unittest.TestCase):
         self.assertIn("headers", kwargs)
         self.assertEqual(kwargs["headers"]["X-Gotify-Key"], "test_token")
 
-    @patch('app.api_handlers.requests.post')
-    def test_gotify_connection_secure_headers(self, mock_post):
+    @patch('app.api_handlers.APIHandler._get_session')
+    def test_gotify_connection_secure_headers(self, mock_get_session):
+        mock_session_instance = MagicMock()
+        mock_get_session.return_value = mock_session_instance
+
         from app.api_handlers import APIHandler
         APIHandler.test_gotify_connection('http://gotify.example.com', 'test_token')
 
-        mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
+        mock_session_instance.post.assert_called_once()
+        args, kwargs = mock_session_instance.post.call_args
 
         # Verify URL doesn't contain token
         self.assertEqual(args[0], "http://gotify.example.com/message")
@@ -46,17 +53,20 @@ class TestAPIHandlers(unittest.TestCase):
         self.assertEqual(kwargs["headers"]["X-Gotify-Key"], "test_token")
 
     @patch('app.api_handlers.get_env_bool', return_value=True)
-    @patch('app.api_handlers.requests.get')
-    def test_portainer_connection_respects_verify_ssl(self, mock_get, _mock_get_env_bool):
+    @patch('app.api_handlers.APIHandler._get_session')
+    def test_portainer_connection_respects_verify_ssl(self, mock_get_session, _mock_get_env_bool):
         from app.api_handlers import APIHandler
+
+        mock_session_instance = MagicMock()
+        mock_get_session.return_value = mock_session_instance
 
         response = MagicMock()
         response.json.return_value = [{"Id": 1}]
-        mock_get.return_value = response
+        mock_session_instance.get.return_value = response
 
         result = APIHandler.test_portainer_connection('https://portainer.example.com', 'test_token')
 
         self.assertEqual(result, [{"Id": 1}])
-        mock_get.assert_called_once()
-        _, kwargs = mock_get.call_args
+        mock_session_instance.get.assert_called_once()
+        _, kwargs = mock_session_instance.get.call_args
         self.assertTrue(kwargs["verify"])

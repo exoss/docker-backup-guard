@@ -40,3 +40,7 @@
 ## 2024-03-24 - Streamlit configuration hot-reload performance
 **Learning:** Calling `load_dotenv` unconditionally in Streamlit app loops causes heavy disk I/O on every UI interaction. Just deleting the reload call breaks dynamic configuration updates (e.g. from the UI setup wizard).
 **Action:** Use `@st.cache_data` and pass the `os.stat(env_path).st_mtime` as an argument to bust the cache only when the `.env` file is actually modified, ensuring high performance while maintaining hot-reload functionality.
+
+## 2024-03-24 - Reuse shared requests.Session() for connection tests
+**Learning:** Instantiating new `requests` sessions for periodic connection testing (`test_portainer_connection` and `test_gotify_connection`) introduces repeated TCP handshake and TLS negotiation overhead, defeating the benefits of connection pooling on frequent checks.
+**Action:** Always prefer to reuse a shared `requests.Session()` instance (e.g. `APIHandler._shared_session`) for static or class-level connectivity testing, just as we do for core operational requests.
