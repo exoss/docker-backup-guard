@@ -40,3 +40,6 @@
 ## 2024-03-24 - Streamlit configuration hot-reload performance
 **Learning:** Calling `load_dotenv` unconditionally in Streamlit app loops causes heavy disk I/O on every UI interaction. Just deleting the reload call breaks dynamic configuration updates (e.g. from the UI setup wizard).
 **Action:** Use `@st.cache_data` and pass the `os.stat(env_path).st_mtime` as an argument to bust the cache only when the `.env` file is actually modified, ensuring high performance while maintaining hot-reload functionality.
+## 2025-10-24 - File metadata lookup optimization (LBYL to EAFP)
+**Learning:** Using `os.path.exists()` followed immediately by `os.path.getmtime()` results in two separate `stat()` system calls on the underlying file system. When this occurs inside a cached initialization flow or tight loop, it contributes unnecessary I/O overhead.
+**Action:** Replace this LBYL (Look Before You Leap) approach with an EAFP (Easier to Ask for Forgiveness than Permission) approach: call `os.stat().st_mtime` inside a `try...except OSError` block. This reduces the number of system calls from 2 to 1 for the happy path and remains perfectly safe.
