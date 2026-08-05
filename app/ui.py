@@ -401,9 +401,11 @@ def show_dashboard():
         state_path = "/backups/backup_state.json"
         state = {}
         try:
-            if os.path.exists(state_path):
-                mtime = os.path.getmtime(state_path)
-                state = _load_state_cached(state_path, mtime)
+            # Performance optimization: Use EAFP (try/except) and a single os.stat() call
+            # instead of LBYL (os.path.exists + os.path.getmtime) to avoid redundant
+            # filesystem stat calls in the tight UI rendering loop.
+            mtime = os.stat(state_path).st_mtime
+            state = _load_state_cached(state_path, mtime)
         except OSError:
             pass
         

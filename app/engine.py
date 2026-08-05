@@ -259,12 +259,13 @@ class BackupEngine:
         data = {}
 
         # Read existing data to preserve history (e.g. last success)
-        if os.path.exists(state_path):
-            try:
-                with open(state_path, "r") as f:
-                    data = json.load(f)
-            except Exception:
-                pass  # Start fresh if corrupt
+        try:
+            # Performance optimization: Remove LBYL `os.path.exists()` check.
+            # EAFP relies on `open()` to throw FileNotFoundError, saving an extra `stat` call.
+            with open(state_path, "r") as f:
+                data = json.load(f)
+        except Exception:
+            pass  # Start fresh if corrupt or not found
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
