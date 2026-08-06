@@ -401,9 +401,8 @@ def show_dashboard():
         state_path = "/backups/backup_state.json"
         state = {}
         try:
-            if os.path.exists(state_path):
-                mtime = os.path.getmtime(state_path)
-                state = _load_state_cached(state_path, mtime)
+            mtime = os.stat(state_path).st_mtime
+            state = _load_state_cached(state_path, mtime)
         except OSError:
             pass
         
