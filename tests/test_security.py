@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch, mock_open
 
-# To test this, we should patch app.security.KEY_FILE or patch os.path.exists
 import app.security
+
 
 class TestSecurity(unittest.TestCase):
     def setUp(self):
@@ -12,30 +12,30 @@ class TestSecurity(unittest.TestCase):
             app.security._get_fernet.cache_clear()
 
     def test_get_key_file_unreadable_raises_exception(self):
-        with patch('os.path.exists', return_value=True):
-            # Mock open to raise an exception (e.g., PermissionError)
-            with patch('builtins.open', side_effect=PermissionError("Permission denied")):
-                with self.assertRaises(RuntimeError) as context:
-                    app.security._get_key()
+        # Mock open to raise an exception (e.g., PermissionError)
+        with patch('builtins.open', side_effect=PermissionError("Permission denied")):
+            with self.assertRaises(RuntimeError) as context:
+                app.security._get_key()
 
-                self.assertIn("Failed to read existing encryption key: Permission denied", str(context.exception))
+            self.assertIn("Failed to read existing encryption key: Permission denied", str(context.exception))
 
     def test_get_key_file_readable(self):
         mock_key = b'mocked_key_bytes'
-        with patch('os.path.exists', return_value=True):
-            with patch('builtins.open', mock_open(read_data=mock_key)):
-                key = app.security._get_key()
-                self.assertEqual(key, mock_key)
+        with patch('builtins.open', mock_open(read_data=mock_key)):
+            key = app.security._get_key()
+            self.assertEqual(key, mock_key)
 
     def test_get_key_file_not_exists_generates_new(self):
-        with patch('os.path.exists', return_value=False):
-            with patch('builtins.open', mock_open()) as mock_file:
-                with patch('os.makedirs') as mock_makedirs:
-                    key = app.security._get_key()
-                    self.assertIsNotNone(key)
-                    self.assertEqual(len(key), 44) # Fernet key is 44 bytes base64
-                    mock_makedirs.assert_called_once()
-                    mock_file.assert_called_once()
+        with patch('builtins.open', mock_open()) as mock_file:
+            with patch('os.makedirs') as mock_makedirs:
+                # First open(rb) raises FileNotFoundError, second open(wb) succeeds
+                mock_file.side_effect = [FileNotFoundError("key file missing"), mock_file.return_value]
+
+                key = app.security._get_key()
+                self.assertIsNotNone(key)
+                self.assertEqual(len(key), 44)  # Fernet key is 44 bytes base64
+                mock_makedirs.assert_called_once()
+                self.assertEqual(mock_file.call_count, 2)
 
 
     def test_encrypt_value_empty(self):

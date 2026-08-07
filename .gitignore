@@ -9,3 +9,4 @@ config/rclone/rclone.conf
 .trae/rules
 .trae/rules/restorecontainerrules.md
 test_dir/
+logs/

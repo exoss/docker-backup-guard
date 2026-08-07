@@ -500,4 +500,7 @@ def get_text(lang_code, key):
     try:
         return TRANSLATIONS[lang_code][key]
     except KeyError:
-        return TRANSLATIONS.get(lang_code, _en_trans).get(key, f"[{key}]")
+        try:
+            return _en_trans[key]
+        except KeyError:
+            return f"[{key}]"

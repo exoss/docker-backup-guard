@@ -46,16 +46,15 @@ def save_env(updates):
     current_env = {}
     
     # 1. Read existing
-    if os.path.exists(target_file):
-        try:
-            with open(target_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and "=" in line and not line.startswith("#"):
-                        key, value = line.split("=", 1)
-                        current_env[key] = value
-        except Exception:
-            pass
+    try:
+        with open(target_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and "=" in line and not line.startswith("#"):
+                    key, value = line.split("=", 1)
+                    current_env[key] = value
+    except Exception:
+        pass
 
     # 2. Update with new values
     current_env.update(updates)
@@ -401,9 +400,8 @@ def show_dashboard():
         state_path = "/backups/backup_state.json"
         state = {}
         try:
-            if os.path.exists(state_path):
-                mtime = os.path.getmtime(state_path)
-                state = _load_state_cached(state_path, mtime)
+            mtime = os.stat(state_path).st_mtime
+            state = _load_state_cached(state_path, mtime)
         except OSError:
             pass
         
@@ -744,21 +742,23 @@ def show_dashboard():
         with col_l2:
             if st.button(get_text(lang, "btn_clear_logs"), type="primary"):
                 log_path = "logs/app.log"
-                if os.path.exists(log_path):
+                try:
                     with open(log_path, "w") as f:
                         f.write("") # Clear file
                     st.success(get_text(lang, "status_logs_cleared"))
                     time.sleep(1)
                     st.rerun()
+                except OSError:
+                    pass
             
         log_path = "logs/app.log"
-        if os.path.exists(log_path):
+        try:
             with open(log_path, "r") as f:
                 # Read last 200 lines efficiently without loading entire file into memory
                 lines = collections.deque(f, maxlen=200)
                 log_content = "".join(lines)
             st.code(log_content, language="log")
-        else:
+        except OSError:
             st.info("No logs found.")
 
 def run():

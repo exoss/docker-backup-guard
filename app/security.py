@@ -8,13 +8,14 @@ KEY_FILE = "/backups/secret.key"
 @lru_cache(maxsize=1)
 def _get_key():
     """Loads or creates the encryption key."""
-    if os.path.exists(KEY_FILE):
-        try:
-            with open(KEY_FILE, "rb") as f:
-                return f.read()
-        except Exception as e:
-            print(f"Error reading encryption key from {KEY_FILE}: {e}")
-            raise RuntimeError(f"Failed to read existing encryption key: {e}")
+    try:
+        with open(KEY_FILE, "rb") as f:
+            return f.read()
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f"Error reading encryption key from {KEY_FILE}: {e}")
+        raise RuntimeError(f"Failed to read existing encryption key: {e}")
     
     # Generate new key
     key = Fernet.generate_key()
