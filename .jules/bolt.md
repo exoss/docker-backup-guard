@@ -40,3 +40,6 @@
 ## 2024-03-24 - Streamlit configuration hot-reload performance
 **Learning:** Calling `load_dotenv` unconditionally in Streamlit app loops causes heavy disk I/O on every UI interaction. Just deleting the reload call breaks dynamic configuration updates (e.g. from the UI setup wizard).
 **Action:** Use `@st.cache_data` and pass the `os.stat(env_path).st_mtime` as an argument to bust the cache only when the `.env` file is actually modified, ensuring high performance while maintaining hot-reload functionality.
+## 2025-03-08 - Use EAFP over LBYL to eliminate redundant stat syscalls
+**Learning:** Using "Look Before You Leap" (LBYL) checks like `os.path.exists()` before opening a file or reading its `stat` properties forces the OS to execute a redundant `stat` system call, creating CPU overhead and increasing the risk of Time-Of-Check-to-Time-Of-Use (TOCTOU) race conditions.
+**Action:** Always prefer the "Easier to Ask for Forgiveness than Permission" (EAFP) pattern by attempting to open or stat the file directly within a `try...except OSError:` (or `FileNotFoundError`) block to eliminate the initial lookup overhead. Ensure corresponding unit tests are refactored to mock the exceptions instead of `os.path.exists()`.
