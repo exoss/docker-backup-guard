@@ -232,17 +232,16 @@ def show_setup_wizard():
         if os.path.isdir(read_rclone_path):
             read_rclone_path = os.path.join(read_rclone_path, "rclone.conf")
 
-        if os.path.exists(read_rclone_path) and os.path.isfile(read_rclone_path):
-            try:
-                with open(read_rclone_path, "r") as f:
-                    existing_conf = f.read()
-                
-                # Auto-detect remote name from existing config
-                match = re.search(r"^\[(.*?)\]", existing_conf, re.MULTILINE)
-                if match:
-                    default_remote_name = match.group(1)
-            except Exception:
-                pass
+        try:
+            with open(read_rclone_path, "r") as f:
+                existing_conf = f.read()
+
+            # Auto-detect remote name from existing config
+            match = re.search(r"^\[(.*?)\]", existing_conf, re.MULTILINE)
+            if match:
+                default_remote_name = match.group(1)
+        except Exception:
+            pass
 
         with col10:
             rclone_remote = st.text_input(get_text(lang, "label_rclone_remote"), value=default_remote_name, help=get_text(lang, "help_rclone_remote"))
@@ -637,14 +636,13 @@ def show_dashboard():
             rclone_path = read_rclone_path
 
         rclone_content = ""
-        if os.path.exists(rclone_path) and os.path.isfile(rclone_path):
-            try:
-                with open(rclone_path, "r") as f:
-                    rclone_content = f.read()
-            except Exception as e:
-                st.error(f"Error reading rclone.conf: {e}")
-        else:
+        try:
+            with open(rclone_path, "r") as f:
+                rclone_content = f.read()
+        except (FileNotFoundError, IsADirectoryError):
             st.info(get_text(lang, "info_rclone_not_found"))
+        except Exception as e:
+            st.error(f"Error reading rclone.conf: {e}")
         
         new_rclone_content = st.text_area("rclone.conf Content", value=rclone_content, height=200, disabled=disabled, help=get_text(lang, "help_rclone_content_hint"))
         
